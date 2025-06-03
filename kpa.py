@@ -47,7 +47,7 @@ else:
 try:
     for arg, funcion in args.items():
         if sys.argv[1] == "-h":
-            print("""Argumentos válidos en KPA Versión 1.0.0:
+            print("""Argumentos válidos en KPA Versión 1.0.1:
 -I paquete para instalar, -A paquete para actualizar (o "-A todo" para actualización completa) y -D paquete para desinstalar.
 -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.""")
             break
