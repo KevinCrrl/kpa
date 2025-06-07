@@ -20,26 +20,54 @@ from colorama import (
 )
 from os.path import (
     expanduser,
-    exists
+    exists,
+    join
 )
 from shutil import rmtree
 from os import (
     listdir,
-    chdir
+    chdir,
+    makedirs,
+    remove
 )
 import subprocess as sb
+import webbrowser
+import json
 import time
 import sys
 
 init(autoreset=True)
 
+if exists(expanduser("~/aur/act")):
+    print(Fore.GREEN + "Ruta de AUR encontrada...\n")
+else:
+    print(Fore.RED + "ATENCIÓN: No se encontró la carpeta ~/aur o ~/aur/act\nCreando carpeta...")
+    makedirs(expanduser("~/aur/act"), exist_ok=True)
+
+try:
+    with open(expanduser("~/aur/kpa.json"), "r", encoding="utf-8") as cf:
+        datos = json.load(cf)
+except FileNotFoundError:
+    print(Fore.RED + "ERROR: Archivo de configuración '~/aur/kpa.json' no encontrado.\n")
+    datos = {}
+except json.decoder.JSONDecodeError:
+    print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo '~/aur/kpa.json'\n")
+    datos = {}
+
+def novar(variable):
+    print(Fore.RED + f"ERROR: No se pudo obtener la variable '{variable}' de ~/aur/kpa.json")
+
 def pkgbuild(paquete):
     print("\n")
     try:
-        sb.run(["cat", expanduser(f"~/aur/{paquete}/PKGBUILD")], check=True)
+        sb.run([datos["visor"], expanduser(f"~/aur/{paquete}/PKGBUILD")], check=True)
     except sb.CalledProcessError:
         print(Fore.RED + "ERROR: Intentaste clonar un repositorio no existente del AUR.")
-        sb.run(["rm", "-rf", expanduser(f"~/aur/{paquete}")], check=True)
+        rmtree(expanduser(f"~/aur/{paquete}"))
+        sys.exit(1)
+    except KeyError:
+        novar("visor")
+        rmtree(expanduser(f"~/aur/{paquete}"))
         sys.exit(1)
     confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿desea continuar con la construcción? (s,n): ")
     if confirmacion.strip().lower() == "s":
@@ -86,10 +114,9 @@ def actualizar_uno(paquete):
 def actualizar_arg(paquete):
     if paquete == "todo":
         for directorio in listdir(expanduser("~/aur/")):
-            if directorio == "act":
+            if directorio == "act" or directorio == "kpa.json":
                 continue
-            else:
-                actualizar_uno(directorio)
+            actualizar_uno(directorio)
     else:
         actualizar_uno(paquete)
 
@@ -103,3 +130,24 @@ def desinstalar(paquete):
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta ~/aur, por ende no se intentará desinstalar.")
             sys.exit(1)
         sb.run(["sudo", "pacman", "-Rns", paquete], check=True)
+
+def consultar(paquete):
+    try:
+        nav = webbrowser.get(datos["navegador"])
+        nav.open(f"https://aur.archlinux.org/packages/{paquete}")
+    except webbrowser.Error:
+        print(Fore.RED + f"ERROR: No se ha encontrado el navegador {datos["navegador"]} que fue seleccionado.")
+    except KeyError:
+        novar("navegador")
+
+def reinstalar(paquete):
+    pdir = expanduser(f"~/aur/{paquete}") 
+    if exists(pdir):
+        for archivo in listdir(pdir):
+            if archivo.endswith(".pkg.tar.zst"):
+                completa = join(pdir, archivo)
+                remove(completa)
+        chdir(pdir)
+        pkgbuild(paquete)
+    else:
+        print(Fore.RED + f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
