@@ -26,4 +26,4 @@ Puede ejecutar kpa -h para obtener más información.
 
 Este archivo permite a KPA saber que programas usar para ver y mostrar (e incluso editar si se escoge un editor) PKGBUILDs, esto mediante la variable "visor" donde se pueden usar visores de consola como cat o bat, e incluso editores para hacer personalizaciones al PKGBUILD como nano o vim y la variable "navegador" se usa para abrir la página de un paquete en el AUR cuando se use el argumento -C, si alguna de estas variables no está definidas o no está instalada realmente, KPA lanzará una advertencia, es importante tener este archivo y editarlo correctamente, por ello se proporciona este ejemplo:
 
-![Archivo ~/aur/kpa.json](docs/json.png)
+![Archivo ~/aur/kpa.json](json.png)
