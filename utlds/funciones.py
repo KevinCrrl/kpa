@@ -44,18 +44,31 @@ else:
     print(Fore.RED + "ATENCIÓN: No se encontró la carpeta ~/aur o ~/aur/act\nCreando carpeta...")
     makedirs(expanduser("~/aur/act"), exist_ok=True)
 
+datos = {
+    "visor": "cat",
+    "torsocks": False,
+}
 try:
     with open(expanduser("~/aur/kpa.json"), "r", encoding="utf-8") as cf:
         datos = json.load(cf)
 except FileNotFoundError:
     print(Fore.RED + "ERROR: Archivo de configuración '~/aur/kpa.json' no encontrado.\n")
-    datos = {}
 except json.decoder.JSONDecodeError:
     print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo '~/aur/kpa.json'\n")
-    datos = {}
 
 def novar(variable):
     print(Fore.RED + f"ERROR: No se pudo obtener la variable '{variable}' de ~/aur/kpa.json")
+
+def clonar(url_repo):
+    try:
+        if datos["torsocks"]:
+            sb.run(["torsocks", "git", "clone", url_repo], check=True)
+        else:
+            sb.run(["git", "clone", url_repo], check=True)
+    except KeyError:
+        novar("torsocks")
+        print(Fore.YELLOW + ">> Clonando de manera común y corriente...")
+        sb.run(["git", "clone", url_repo], check=True)
 
 def pkgbuild(paquete):
     print("\n")
@@ -63,10 +76,6 @@ def pkgbuild(paquete):
         sb.run([datos["visor"], expanduser(f"~/aur/{paquete}/PKGBUILD")], check=True)
     except sb.CalledProcessError:
         print(Fore.RED + "ERROR: Intentaste clonar un repositorio no existente del AUR.")
-        rmtree(expanduser(f"~/aur/{paquete}"))
-        sys.exit(1)
-    except KeyError:
-        novar("visor")
         rmtree(expanduser(f"~/aur/{paquete}"))
         sys.exit(1)
     confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿desea continuar con la construcción? (s,n): ")
@@ -83,11 +92,10 @@ def pkgbuild(paquete):
 
 def instalar(paquete):
     chdir(expanduser("~/aur/"))
-    repositorio = f"https://aur.archlinux.org/{paquete}.git"
-    print(Fore.BLUE + f"Clonando {repositorio}...")
-    time.sleep(3)
+    print(Fore.BLUE + f"Clonando repositorio de {paquete}...")
+    time.sleep(1)
     try:
-        sb.run(["git", "clone", repositorio], check=True)
+        clonar(f"https://aur.archlinux.org/{paquete}.git")
     except sb.CalledProcessError:
         print(Fore.RED + "ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
         sys.exit(1)
@@ -97,7 +105,7 @@ def instalar(paquete):
 def actualizar_uno(paquete):
     if exists(expanduser(f"~/aur/{paquete}")):
         chdir(expanduser("~/aur/act"))
-        sb.run(["git", "clone", f"https://aur.archlinux.org/{paquete}.git"], check=True)
+        clonar(f"https://aur.archlinux.org/{paquete}.git")
         with open(expanduser(f"~/aur/{paquete}/PKGBUILD"), 'rb') as antiguo, open(expanduser(f"~/aur/act/{paquete}/PKGBUILD"), 'rb') as nuevo:
             comparar = antiguo.read() == nuevo.read()
         if comparar:
