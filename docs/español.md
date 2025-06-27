@@ -13,6 +13,7 @@ Este es un proyecto simple para automatizar la clonación de PKGBUILD y construc
 -D: Desinstalar
 -C: Consultar información en un navegador
 -R: Reinstalar
+-M: Múltiples paquetes
 
 Puede ejecutar kpa -h para obtener más información.
 
@@ -22,8 +23,24 @@ Puede ejecutar kpa -h para obtener más información.
 
 - Sin tantas dependencias: kpa depende de las librerías propias de Python y la libreía externa colorama, lo cual no debe ser un gran peso, ya que Python viene instalado en la mayorpia de sistemas Linux, y python-colorama está en el extra de Pacman, por último para la automatización solo se usan programas que forman parte de las coreutils de GNU que vienen en toda instalación de Arch (como rm, mv y cat, que son usadas en kpa), además se usa solo lo suficiente para la construcción de paquetes del AUR, o sea, Git y makepkg que según la Wiki de Arch ya viene por defecto en el paquete Pacman. Además si se descarga la versión ya compilada desde la zona de releases o desde el AUR, no se necesitará tener ni Python ni python-colorama.
 
+- Torsocks: Use opcionalmente torsocks para clonar desde el AUR de manera anónima, se puede activar o desactivar en kpa.json usando valores 'true' o 'false'
+
+## El parámetro -M
+
+Esta función es experimental y puede tener errores, permite usar las funciones instalar, desinstalar, actualizar o reinstalar con múltiples paquetes, en este ejemplo se puede ver como se usa con la función actualizar:
+
+```
+$ kpa -M actualizar
+Ruta de AUR encontrada...
+
+Ingresa los paquetes a los que quieras aplicar la función seleccionada, ingresa separando solo con espacios entre nombres de paquetes, no separe con guiones o comas.
+Nombre de los paquetes: paquete1 paquete2 paquete3
+```
+
+Como se puede ver una vez se llama a la función actualizar con el -M, se pide más abajo el nombre de los paquetes a los cuales se les va a ejecutar la función, en este caso la función actualizar.
+
 ## Ejemplo de ~/aur/kpa.json
 
 Este archivo permite a KPA saber que programas usar para ver y mostrar (e incluso editar si se escoge un editor) PKGBUILDs, esto mediante la variable "visor" donde se pueden usar visores de consola como cat o bat, e incluso editores para hacer personalizaciones al PKGBUILD como nano o vim y la variable "navegador" se usa para abrir la página de un paquete en el AUR cuando se use el argumento -C, si alguna de estas variables no está definidas o no está instalada realmente, KPA lanzará una advertencia, es importante tener este archivo y editarlo correctamente, por ello se proporciona este ejemplo:
 
-![Archivo ~/aur/kpa.json](docs/json.png)
+![Archivo ~/aur/kpa.json](json.png)
