@@ -14,23 +14,26 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
+from xdg.BaseDirectory import xdg_cache_home
 from colorama import (
     init,
     Fore
 )
 from os.path import (
-    expanduser,
     exists,
     join
 )
-from shutil import rmtree
+from shutil import (
+    rmtree,
+    move
+)
 from os import (
     listdir,
     chdir,
-    makedirs,
     remove
 )
 import subprocess as sb
+import jsonschema
 import webbrowser
 import json
 import time
@@ -38,26 +41,46 @@ import sys
 
 init(autoreset=True)
 
-if exists(expanduser("~/aur/act")):
-    print(Fore.GREEN + "Ruta de AUR encontrada...\n")
-else:
-    print(Fore.RED + "ATENCIÓN: No se encontró la carpeta ~/aur o ~/aur/act\nCreando carpeta...")
-    makedirs(expanduser("~/aur/act"), exist_ok=True)
+RUTA = join(xdg_cache_home, "kpa")
 
 datos = {
-    "visor": "cat",
-    "torsocks": False,
+    "visor": "kpa",  # Visor independiente de KPA
+    "torsocks": False,  # Evitar uso de Tor si no está instalado o configurado
+    "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
+    "root": "sudo"  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
 }
+
 try:
-    with open(expanduser("~/aur/kpa.json"), "r", encoding="utf-8") as cf:
+    with open(join(RUTA, "kpa.json"), "r", encoding="utf-8") as cf:
         datos = json.load(cf)
 except FileNotFoundError:
-    print(Fore.RED + "ERROR: Archivo de configuración '~/aur/kpa.json' no encontrado.\n")
+    print(Fore.RED + "ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
 except json.decoder.JSONDecodeError:
-    print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo '~/aur/kpa.json'\n")
+    print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo 'kpa.json'\n")
+
+# Validacipon extra del archivo JSON usando jsonschema
+
+kpa_schema = {
+    "type": "object",
+    "properties": {
+        "visor": {"type": "string"},
+        "torsocks": {"type": "boolean"},
+        "navegador": {"type": "string"},
+        "root": {"type": "string"}
+    },
+    "required": ["visor", "torsocks", "navegador", "root"]
+}
+
+try:
+    jsonschema.validate(datos, kpa_schema)
+except jsonschema.exceptions.ValidationError as e:
+    print(Fore.RED + f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
+    sys.exit(1)
+
 
 def novar(variable):
-    print(Fore.RED + f"ERROR: No se pudo obtener la variable '{variable}' de ~/aur/kpa.json")
+    print(Fore.RED + f"ERROR: No se pudo obtener la variable '{variable}' de kpa.json")
+
 
 def clonar(url_repo):
     try:
@@ -70,14 +93,32 @@ def clonar(url_repo):
         print(Fore.YELLOW + ">> Clonando de manera común y corriente...")
         sb.run(["git", "clone", url_repo], check=True)
 
-def pkgbuild(paquete):
+
+def visor(ruta_archivo):
+    with open(ruta_archivo, "r", encoding="utf-8") as a_recorrer:
+        for linea in a_recorrer:
+            print(linea.strip())
+
+
+def no_aur(ruta):
+    print(Fore.RED + "ERROR: Intentaste clonar un repositorio no existente del AUR.")
+    rmtree(ruta)
+    sys.exit(1)
+
+
+def pkgbuild(paquete, actualizacion=False):
     print("\n")
-    try:
-        sb.run([datos["visor"], expanduser(f"~/aur/{paquete}/PKGBUILD")], check=True)
-    except sb.CalledProcessError:
-        print(Fore.RED + "ERROR: Intentaste clonar un repositorio no existente del AUR.")
-        rmtree(expanduser(f"~/aur/{paquete}"))
-        sys.exit(1)
+    PKGBUILD = join(RUTA, paquete, "PKGBUILD")
+    if datos["visor"] == "kpa":
+        try:
+            visor(PKGBUILD)
+        except FileNotFoundError:
+            no_aur(join(RUTA, paquete))
+    else:
+        try:
+            sb.run([datos["visor"], PKGBUILD], check=True)
+        except sb.CalledProcessError:
+            no_aur(join(RUTA, paquete))
     confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿desea continuar con la construcción? (s,n): ")
     if confirmacion.strip().lower() == "s":
         print(Fore.BLUE + "Creando paquete con makepkg...")
@@ -87,11 +128,15 @@ def pkgbuild(paquete):
         except sb.CalledProcessError:
             print(Fore.RED + "ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
-        rmtree(expanduser(f"~/aur/{paquete}"))
+        # Correción de bug que eliminaba la carpeta de un paquete como si estuviera instalando cuando a veces es una actualización
+        # Esta correción evita que se borre la carpeta en caso de actualización y solo se borre si no se quiere instalar por primera vez
+        if not actualizacion:
+            rmtree(join(RUTA, paquete))
         sys.exit()
 
+
 def instalar(paquete):
-    chdir(expanduser("~/aur/"))
+    chdir(RUTA)
     print(Fore.BLUE + f"Clonando repositorio de {paquete}...")
     time.sleep(1)
     try:
@@ -99,45 +144,52 @@ def instalar(paquete):
     except sb.CalledProcessError:
         print(Fore.RED + "ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
         sys.exit(1)
-    chdir(expanduser(f"~/aur/{paquete}"))
-    pkgbuild(paquete)
+    chdir(join(RUTA, paquete))
+    pkgbuild(paquete)  # actualización por defecto queda en False
+
 
 def actualizar_uno(paquete):
-    if exists(expanduser(f"~/aur/{paquete}")):
-        chdir(expanduser("~/aur/act"))
+    if exists(join(RUTA, paquete)):
+        chdir(join(RUTA, "act"))
         clonar(f"https://aur.archlinux.org/{paquete}.git")
-        with open(expanduser(f"~/aur/{paquete}/PKGBUILD"), 'rb') as antiguo, open(expanduser(f"~/aur/act/{paquete}/PKGBUILD"), 'rb') as nuevo:
+        with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
             comparar = antiguo.read() == nuevo.read()
         if comparar:
             print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
-            rmtree(expanduser(f"~/aur/act/{paquete}"))
+            rmtree(join(RUTA, "act", paquete))
         else:
-            rmtree(expanduser(f"~/aur/{paquete}"))
-            sb.run(["mv", expanduser(f"~/aur/act/{paquete}"), expanduser("~/aur/")], check=True)
-            chdir(expanduser(f"~/aur/{paquete}"))
-            pkgbuild(paquete)
+            rmtree(join(RUTA, paquete))
+            move(join(RUTA, "act", paquete), join(RUTA))
+            chdir(join(RUTA, paquete))
+            pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
     else:
         print(Fore.RED + f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
+
 def actualizar_arg(paquete):
     if paquete == "todo":
-        for directorio in listdir(expanduser("~/aur/")):
+        for directorio in listdir(join(RUTA)):
             if directorio == "act" or directorio == "kpa.json":
                 continue
             actualizar_uno(directorio)
     else:
         actualizar_uno(paquete)
 
+
 def desinstalar(paquete):
-    print(Fore.YELLOW + f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en ~/aur")
+    print(Fore.YELLOW + f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
     confirmacion = input("¿Desea continuar? (s/n): ")
     if confirmacion.strip().lower() == "s":
         try:
-            rmtree(expanduser(f"~/aur/{paquete}"))
+            rmtree(join(RUTA, paquete))
+            sb.run([datos["root"], "pacman", "-Rns", paquete, "--noconfirm"], check=True)
         except FileNotFoundError:
-            print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta ~/aur, por ende no se intentará desinstalar.")
-            sys.exit(1)
-        sb.run(["sudo", "pacman", "-Rns", paquete], check=True)
+            print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
+        except KeyError:
+            novar("root")
+        except sb.CalledProcessError:
+            print(Fore.RED + "ERROR: Es posible que él paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
+
 
 def consultar(paquete):
     try:
@@ -148,14 +200,15 @@ def consultar(paquete):
     except KeyError:
         novar("navegador")
 
+
 def reinstalar(paquete):
-    pdir = expanduser(f"~/aur/{paquete}") 
+    pdir = join(RUTA, paquete)
     if exists(pdir):
         for archivo in listdir(pdir):
             if archivo.endswith(".pkg.tar.zst"):
                 completa = join(pdir, archivo)
                 remove(completa)
         chdir(pdir)
-        pkgbuild(paquete)
+        pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
     else:
         print(Fore.RED + f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")

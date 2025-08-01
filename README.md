@@ -1,9 +1,9 @@
 # KPA: KevinCrrl Python Aur helper
 
-## Documentación en Español
+## Documentación para la versión más reciente
 
-[Español](docs/español.md)
+[Versión más reciente](https://KevinCrrl.github.io/documentacion/kpa.html)
 
-## Documentation in English
+## Documentación para versiones anteriores a 1.3.0
 
-[English](docs/english.md)
+[Anteriores](docs/anteriores.md)
