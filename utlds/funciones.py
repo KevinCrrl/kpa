@@ -47,7 +47,8 @@ datos = {
     "visor": "kpa",  # Visor independiente de KPA
     "torsocks": False,  # Evitar uso de Tor si no está instalado o configurado
     "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
-    "root": "sudo"  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
+    "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
+    "ignorar": []  # No ignorar paquetes por defecto
 }
 
 try:
@@ -66,9 +67,10 @@ kpa_schema = {
         "visor": {"type": "string"},
         "torsocks": {"type": "boolean"},
         "navegador": {"type": "string"},
-        "root": {"type": "string"}
+        "root": {"type": "string"},
+        "ignorar": {"type": "array", "items": {"type": "string"}}
     },
-    "required": ["visor", "torsocks", "navegador", "root"]
+    "required": ["visor", "torsocks", "navegador", "root", "ignorar"]
 }
 
 try:
@@ -78,19 +80,10 @@ except jsonschema.exceptions.ValidationError as e:
     sys.exit(1)
 
 
-def novar(variable):
-    print(Fore.RED + f"ERROR: No se pudo obtener la variable '{variable}' de kpa.json")
-
-
 def clonar(url_repo):
-    try:
-        if datos["torsocks"]:
-            sb.run(["torsocks", "git", "clone", url_repo], check=True)
-        else:
-            sb.run(["git", "clone", url_repo], check=True)
-    except KeyError:
-        novar("torsocks")
-        print(Fore.YELLOW + ">> Clonando de manera común y corriente...")
+    if datos["torsocks"]:
+        sb.run(["torsocks", "git", "clone", url_repo], check=True)
+    else:
         sb.run(["git", "clone", url_repo], check=True)
 
 
@@ -132,7 +125,6 @@ def pkgbuild(paquete, actualizacion=False):
         # Esta correción evita que se borre la carpeta en caso de actualización y solo se borre si no se quiere instalar por primera vez
         if not actualizacion:
             rmtree(join(RUTA, paquete))
-        sys.exit()
 
 
 def instalar(paquete):
@@ -150,6 +142,13 @@ def instalar(paquete):
 
 def actualizar_uno(paquete):
     if exists(join(RUTA, paquete)):
+        if paquete in datos["ignorar"]:
+            print(Fore.YELLOW + "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
+            forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
+            if forzar.strip().lower() == "s":
+                pass
+            else:
+                sys.exit(0)
         chdir(join(RUTA, "act"))
         clonar(f"https://aur.archlinux.org/{paquete}.git")
         with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
@@ -168,8 +167,8 @@ def actualizar_uno(paquete):
 
 def actualizar_arg(paquete):
     if paquete == "todo":
-        for directorio in listdir(join(RUTA)):
-            if directorio == "act" or directorio == "kpa.json":
+        for directorio in listdir(RUTA):
+            if directorio == "act" or directorio == "kpa.json" or directorio in datos["ignorar"]:
                 continue
             actualizar_uno(directorio)
     else:
@@ -185,8 +184,6 @@ def desinstalar(paquete):
             sb.run([datos["root"], "pacman", "-Rns", paquete, "--noconfirm"], check=True)
         except FileNotFoundError:
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
-        except KeyError:
-            novar("root")
         except sb.CalledProcessError:
             print(Fore.RED + "ERROR: Es posible que él paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
 
@@ -197,8 +194,6 @@ def consultar(paquete):
         nav.open(f"https://aur.archlinux.org/packages/{paquete}")
     except webbrowser.Error:
         print(Fore.RED + f"ERROR: No se ha encontrado el navegador {datos["navegador"]} que fue seleccionado.")
-    except KeyError:
-        novar("navegador")
 
 
 def reinstalar(paquete):
