@@ -14,7 +14,10 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from xdg.BaseDirectory import xdg_cache_home
+from xdg.BaseDirectory import (
+    xdg_cache_home,
+    xdg_config_home
+)
 from colorama import (
     init,
     Fore
@@ -48,11 +51,12 @@ datos = {
     "torsocks": False,  # Evitar uso de Tor si no está instalado o configurado
     "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
     "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
-    "ignorar": []  # No ignorar paquetes por defecto
+    "ignorar": [],  # No ignorar paquetes por defecto
+    "eula_detector": True  # Activado por defecto para mejor seguridad legal
 }
 
 try:
-    with open(join(RUTA, "kpa.json"), "r", encoding="utf-8") as cf:
+    with open(join(xdg_config_home, "kpa", "kpa.json"), "r", encoding="utf-8") as cf:
         datos = json.load(cf)
 except FileNotFoundError:
     print(Fore.RED + "ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
@@ -68,9 +72,10 @@ kpa_schema = {
         "torsocks": {"type": "boolean"},
         "navegador": {"type": "string"},
         "root": {"type": "string"},
-        "ignorar": {"type": "array", "items": {"type": "string"}}
+        "ignorar": {"type": "array", "items": {"type": "string"}},
+        "eula_detector": {"type": "boolean"}
     },
-    "required": ["visor", "torsocks", "navegador", "root", "ignorar"]
+    "required": ["visor", "torsocks", "navegador", "root", "ignorar", "eula_detector"]
 }
 
 try:
@@ -99,8 +104,22 @@ def no_aur(ruta):
     sys.exit(1)
 
 
+def eula_detectado(ruta):
+    nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula", "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
+    for archivo in listdir(ruta):
+        if archivo in nombres_comunes:
+            return True
+    return False
+
+
 def pkgbuild(paquete, actualizacion=False):
     print("\n")
+    if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
+        print(Fore.YELLOW + "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
+        instalar = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
+        if instalar.strip().lower() != "s":
+            rmtree(join(RUTA, paquete))
+            sys.exit()
     PKGBUILD = join(RUTA, paquete, "PKGBUILD")
     if datos["visor"] == "kpa":
         try:
@@ -168,7 +187,7 @@ def actualizar_uno(paquete):
 def actualizar_arg(paquete):
     if paquete == "todo":
         for directorio in listdir(RUTA):
-            if directorio == "act" or directorio == "kpa.json" or directorio in datos["ignorar"]:
+            if directorio == "act" or directorio in datos["ignorar"]:
                 continue
             actualizar_uno(directorio)
     else:

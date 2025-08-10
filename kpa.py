@@ -36,7 +36,7 @@ from os import (
 )
 from utlds.multiple import multiarg
 from shutil import move
-from xdg.BaseDirectory import xdg_cache_home
+from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
 import sys
 
 init(autoreset=True)
@@ -72,10 +72,19 @@ elif not exists(RUTA_ANTIGUA) and not exists(RUTA_NUEVA):
 elif not exists(RUTA_ANTIGUA) and exists(RUTA_NUEVA):
     print(Fore.GREEN + "Ruta de KPA encontrada...\n")
 
+# Ruta nueva para configuración, verificación de ruta antigua desaparecerá en versión 2.0
+CONFIG_ANTIGUA = join(xdg_cache_home, "kpa", "kpa.json")
+CONFIG_NUEVA = join(xdg_config_home, "kpa", "kpa.json")
+
+if exists(CONFIG_ANTIGUA):
+    print("El archivo kpa.json será reubicado a .config/kpa/kpa.json")
+    makedirs(join(xdg_config_home, "kpa"))
+    move(CONFIG_ANTIGUA, CONFIG_NUEVA)
+
 try:
     for arg, funcion in args.items():
         if sys.argv[1] == "-h":
-            print("""Argumentos válidos en KPA Versión 1.3-beta:
+            print("""Argumentos válidos en KPA Versión 1.4-beta:
 -I paquete para instalar
 -A paquete para actualizar un paquete instalado por kpa(o "-A todo" para actualización completa de todo lo instalado con kpa)
 -D paquete para desinstalar. -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.
