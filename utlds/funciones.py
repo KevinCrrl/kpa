@@ -136,7 +136,10 @@ def pkgbuild(paquete, actualizacion=False):
         print(Fore.BLUE + "Creando paquete con makepkg...")
         time.sleep(3)
         try:
-            sb.run(["makepkg", "-si"], check=True)
+            if datos["torsocks"]:
+                sb.run(["torsocks", "makepkg", "-si"], check=True)  # Descargar el source usando TOR
+            else:
+                sb.run(["makepkg", "-si"], check=True)
         except sb.CalledProcessError:
             print(Fore.RED + "ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
@@ -169,17 +172,20 @@ def actualizar_uno(paquete):
             else:
                 sys.exit(0)
         chdir(join(RUTA, "act"))
-        clonar(f"https://aur.archlinux.org/{paquete}.git")
-        with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
-            comparar = antiguo.read() == nuevo.read()
-        if comparar:
-            print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
-            rmtree(join(RUTA, "act", paquete))
-        else:
-            rmtree(join(RUTA, paquete))
-            move(join(RUTA, "act", paquete), join(RUTA))
-            chdir(join(RUTA, paquete))
-            pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+        try:
+            clonar(f"https://aur.archlinux.org/{paquete}.git")
+            with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
+                comparar = antiguo.read() == nuevo.read()
+            if comparar:
+                print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
+                rmtree(join(RUTA, "act", paquete))
+            else:
+                rmtree(join(RUTA, paquete))
+                move(join(RUTA, "act", paquete), join(RUTA))
+                chdir(join(RUTA, paquete))
+                pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+        except sb.CalledProcessError as e:
+            print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
     else:
         print(Fore.RED + f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
