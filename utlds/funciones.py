@@ -35,6 +35,7 @@ from os import (
     chdir,
     remove
 )
+from pathlib import Path
 import subprocess as sb
 import jsonschema
 import webbrowser
@@ -137,9 +138,10 @@ def pkgbuild(paquete, actualizacion=False):
         time.sleep(3)
         try:
             if datos["torsocks"]:
-                sb.run(["torsocks", "makepkg", "-si"], check=True)  # Descargar el source usando TOR
+                sb.run(["torsocks", "makepkg", "-s"], check=True)  # Descargar el source usando TOR
             else:
-                sb.run(["makepkg", "-si"], check=True)
+                sb.run(["makepkg", "-s"], check=True)
+            sb.run([datos["root"], "pacman", "-U"] + list(Path(join(RUTA, paquete)).glob("*.pkg.tar.zst")), check=True)  # Instala fuera pues si se usa TOR puede fallar la instalación.
         except sb.CalledProcessError:
             print(Fore.RED + "ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
