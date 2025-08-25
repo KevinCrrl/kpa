@@ -57,7 +57,7 @@ if geteuid() == 0:
 
 # Verificación de cada posible caso de rutas, la ruta ~/aur aún se revisa, sin embargo, no se usa como tal en el programa. se usa ahora el éstandar XDG
 
-# La verificación de ~/aur desaparecerá en la versión 2.0 de KPA
+# La verificación de ~/aur desaparecerá en la versión 1.6 de KPA
 RUTA_ANTIGUA = expanduser("~/aur/act")
 RUTA_NUEVA = join(xdg_cache_home, "kpa/act")
 
@@ -72,7 +72,7 @@ elif not exists(RUTA_ANTIGUA) and not exists(RUTA_NUEVA):
 elif not exists(RUTA_ANTIGUA) and exists(RUTA_NUEVA):
     print(Fore.GREEN + "Ruta de KPA encontrada...\n")
 
-# Ruta nueva para configuración, verificación de ruta antigua desaparecerá en versión 2.0
+# Ruta nueva para configuración, verificación de ruta antigua desaparecerá en versión 1.6
 CONFIG_ANTIGUA = join(xdg_cache_home, "kpa", "kpa.json")
 CONFIG_NUEVA = join(xdg_config_home, "kpa", "kpa.json")
 
