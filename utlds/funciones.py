@@ -14,10 +14,7 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from xdg.BaseDirectory import (
-    xdg_cache_home,
-    xdg_config_home
-)
+from xdg.BaseDirectory import xdg_cache_home
 from colorama import (
     init,
     Fore
@@ -36,54 +33,15 @@ from os import (
     remove
 )
 from pathlib import Path
+from utlds.parser import datos
 import subprocess as sb
-import jsonschema
 import webbrowser
-import json
 import time
 import sys
 
 init(autoreset=True)
 
 RUTA = join(xdg_cache_home, "kpa")
-
-datos = {
-    "visor": "kpa",  # Visor independiente de KPA
-    "torsocks": False,  # Evitar uso de Tor si no está instalado o configurado
-    "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
-    "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
-    "ignorar": [],  # No ignorar paquetes por defecto
-    "eula_detector": True  # Activado por defecto para mejor seguridad legal
-}
-
-try:
-    with open(join(xdg_config_home, "kpa", "kpa.json"), "r", encoding="utf-8") as cf:
-        datos = json.load(cf)
-except FileNotFoundError:
-    print(Fore.RED + "ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
-except json.decoder.JSONDecodeError:
-    print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo 'kpa.json'\n")
-
-# Validacipon extra del archivo JSON usando jsonschema
-
-kpa_schema = {
-    "type": "object",
-    "properties": {
-        "visor": {"type": "string"},
-        "torsocks": {"type": "boolean"},
-        "navegador": {"type": "string"},
-        "root": {"type": "string"},
-        "ignorar": {"type": "array", "items": {"type": "string"}},
-        "eula_detector": {"type": "boolean"}
-    },
-    "required": ["visor", "torsocks", "navegador", "root", "ignorar", "eula_detector"]
-}
-
-try:
-    jsonschema.validate(datos, kpa_schema)
-except jsonschema.exceptions.ValidationError as e:
-    print(Fore.RED + f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
-    sys.exit(1)
 
 
 def clonar(url_repo):
