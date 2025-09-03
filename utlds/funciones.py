@@ -44,11 +44,16 @@ init(autoreset=True)
 RUTA = join(xdg_cache_home, "kpa")
 
 
-def clonar(url_repo):
-    if datos["torsocks"]:
-        sb.run(["torsocks", "git", "clone", url_repo], check=True)
+def clonar(paquete):
+    if datos["clone_branch"]:
+        url_repo = f"--branch {paquete} --single-branch {datos['url']} {paquete}"
     else:
-        sb.run(["git", "clone", url_repo], check=True)
+        url_repo = f"{datos['url']}/{paquete}.git"
+
+    if datos["torsocks"]:
+        sb.run(["torsocks", "git", "clone"] + url_repo.split(), check=True)
+    else:
+        sb.run(["git", "clone"] + url_repo.split(), check=True)
 
 
 def visor(ruta_archivo):
@@ -75,8 +80,8 @@ def pkgbuild(paquete, actualizacion=False):
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
         print(Fore.YELLOW + "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
-        instalar = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
-        if instalar.strip().lower() != "s":
+        pregunta = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
+        if pregunta.strip().lower() != "s":
             rmtree(join(RUTA, paquete))
             sys.exit()
     PKGBUILD = join(RUTA, paquete, "PKGBUILD")
@@ -114,7 +119,7 @@ def instalar(paquete):
     print(Fore.BLUE + f"Clonando repositorio de {paquete}...")
     time.sleep(1)
     try:
-        clonar(f"https://aur.archlinux.org/{paquete}.git")
+        clonar(paquete)
     except sb.CalledProcessError:
         print(Fore.RED + "ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
         sys.exit(1)
@@ -133,7 +138,7 @@ def actualizar_uno(paquete):
                 sys.exit(0)
         chdir(join(RUTA, "act"))
         try:
-            clonar(f"https://aur.archlinux.org/{paquete}.git")
+            clonar(paquete)
             with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
                 comparar = antiguo.read() == nuevo.read()
             if comparar:
@@ -178,7 +183,7 @@ def consultar(paquete):
         nav = webbrowser.get(datos["navegador"])
         nav.open(f"https://aur.archlinux.org/packages/{paquete}")
     except webbrowser.Error:
-        print(Fore.RED + f"ERROR: No se ha encontrado el navegador {datos["navegador"]} que fue seleccionado.")
+        print(Fore.RED + f"ERROR: No se ha encontrado el navegador {datos['navegador']} que fue seleccionado.")
 
 
 def reinstalar(paquete):

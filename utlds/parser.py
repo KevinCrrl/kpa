@@ -29,7 +29,9 @@ datos_kpa = {
     "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
     "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
     "ignorar": [],  # No ignorar paquetes por defecto
-    "eula_detector": True  # Activado por defecto para mejor seguridad legal
+    "eula_detector": True,  # Activado por defecto para mejor seguridad legal
+    "url": "https://aur.archlinux.org",  # URL típica del AUR
+    "clone_branch": False  # Clonar directamente el repositorio, sin usar ramas como en algunos mirrors del AUR.
 }
 
 # Crear copia
@@ -54,7 +56,9 @@ kpa_schema = {
         "navegador": {"type": "string"},
         "root": {"type": "string"},
         "ignorar": {"type": "array", "items": {"type": "string"}},
-        "eula_detector": {"type": "boolean"}
+        "eula_detector": {"type": "boolean"},
+        "url": {"type": "string"},
+        "clone_branch": {"type": "boolean"}
     },
     "required": []
 }

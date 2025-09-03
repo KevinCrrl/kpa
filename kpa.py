@@ -51,7 +51,7 @@ args = {
 }
 
 if geteuid() == 0:
-    print(Fore.YELLOW + "ATENCIÓN: No se debe usa KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
+    print(Fore.YELLOW + "ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
     print("Vuelva a ejecutar KPA como usuario no-root.")
     sys.exit(1)
 
