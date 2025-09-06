@@ -175,7 +175,7 @@ def desinstalar(paquete):
         except FileNotFoundError:
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
         except sb.CalledProcessError:
-            print(Fore.RED + "ERROR: Es posible que él paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
+            print(Fore.RED + "ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
 
 
 def consultar(paquete):
