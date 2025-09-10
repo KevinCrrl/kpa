@@ -55,36 +55,21 @@ if geteuid() == 0:
     print("Vuelva a ejecutar KPA como usuario no-root.")
     sys.exit(1)
 
-# Verificación de cada posible caso de rutas, la ruta ~/aur aún se revisa, sin embargo, no se usa como tal en el programa. se usa ahora el éstandar XDG
+# Verificación de rutas
 
-# La verificación de ~/aur desaparecerá en la versión 1.6 de KPA
-RUTA_ANTIGUA = expanduser("~/aur/act")
-RUTA_NUEVA = join(xdg_cache_home, "kpa/act")
+RUTA = join(xdg_cache_home, "kpa/act")
 
-if exists(RUTA_ANTIGUA) and not exists(RUTA_NUEVA):
-    print(Fore.YELLOW + "ADVERTENCIA: la ruta ~/aur/ no será usada más, KPA moverá la carpeta antigua a tu carpeta .cache")
-    move(expanduser("~/aur"), join(xdg_cache_home, "kpa"))
-
-elif not exists(RUTA_ANTIGUA) and not exists(RUTA_NUEVA):
-    print("Creando ruta para KPA...\n")
-    makedirs(RUTA_NUEVA, exist_ok=True)
-
-elif not exists(RUTA_ANTIGUA) and exists(RUTA_NUEVA):
+if exists(RUTA):
     print(Fore.GREEN + "Ruta de KPA encontrada...\n")
 
-# Ruta nueva para configuración, verificación de ruta antigua desaparecerá en versión 1.6
-CONFIG_ANTIGUA = join(xdg_cache_home, "kpa", "kpa.json")
-CONFIG_NUEVA = join(xdg_config_home, "kpa", "kpa.json")
-
-if exists(CONFIG_ANTIGUA):
-    print("El archivo kpa.json será reubicado a .config/kpa/kpa.json")
-    makedirs(join(xdg_config_home, "kpa"))
-    move(CONFIG_ANTIGUA, CONFIG_NUEVA)
+else:
+    print("Creando ruta para KPA...\n")
+    makedirs(RUTA, exist_ok=True)
 
 try:
     for arg, funcion in args.items():
         if sys.argv[1] == "-h":
-            print("""Argumentos válidos en KPA Versión 1.5.0-beta:
+            print("""Argumentos válidos en KPA Versión 1.6.0-beta:
 -I paquete para instalar
 -A paquete para actualizar un paquete instalado por kpa(o "-A todo" para actualización completa de todo lo instalado con kpa)
 -D paquete para desinstalar. -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.
