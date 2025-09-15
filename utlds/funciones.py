@@ -21,7 +21,8 @@ from colorama import (
 )
 from os.path import (
     exists,
-    join
+    join,
+    isfile
 )
 from shutil import (
     rmtree,
@@ -197,3 +198,37 @@ def reinstalar(paquete):
         pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
     else:
         print(Fore.RED + f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+
+
+def limpiar(tipo):
+    if tipo == "debug":
+        try:
+            instalados = sb.check_output(["pacman", "-Qm"], text=True)
+        except sb.CalledProcessError:
+            print(Fore.RED + "ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
+            sys.exit(1)
+        for paquete in instalados.split("\n"):
+            if "debug" in paquete:
+                print(f"\nSe encontró el debug: {paquete}")
+                eliminar = input("¿Desea eliminarlo del sistema? (S/N): ")
+                if eliminar.strip().lower() == "s":
+                    try:
+                        sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
+                    except sb.CalledProcessError:
+                        print(Fore.RED + "ERROR: Hubo un fallo al intentar remover el paquete.\n")
+    elif tipo == "paquetes":
+        chdir(RUTA)
+        for paquete in listdir():
+            if paquete != "act":
+                print(f"\nUbicación actual: paquete {paquete}")
+                chdir(join(RUTA, paquete))
+                for paquete_path in listdir():
+                    protegido = ["PKGBUILD", ".SRCINFO", ".git"]
+                    if paquete_path not in protegido:
+                        print(f"Eliminando: {paquete_path}")
+                        if isfile(paquete_path):
+                            remove(paquete_path)
+                        else:
+                            rmtree(paquete_path)
+    else:
+        print(Fore.YELLOW + "El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'paquetes'")

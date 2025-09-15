@@ -19,7 +19,8 @@ from utlds.funciones import (
     actualizar_arg,
     desinstalar,
     consultar,
-    reinstalar
+    reinstalar,
+    limpiar
 )
 from colorama import (
     init,
@@ -48,6 +49,7 @@ args = {
     "-C": consultar,
     "-R": reinstalar,
     "-M": multiarg,
+    "-L": limpiar,
 }
 
 if geteuid() == 0:
