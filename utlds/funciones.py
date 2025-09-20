@@ -216,19 +216,33 @@ def limpiar(tipo):
                         sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
                     except sb.CalledProcessError:
                         print(Fore.RED + "ERROR: Hubo un fallo al intentar remover el paquete.\n")
-    elif tipo == "paquetes":
-        chdir(RUTA)
-        for paquete in listdir():
-            if paquete != "act":
-                print(f"\nUbicación actual: paquete {paquete}")
-                chdir(join(RUTA, paquete))
-                for paquete_path in listdir():
-                    protegido = ["PKGBUILD", ".SRCINFO", ".git"]
-                    if paquete_path not in protegido:
-                        print(f"Eliminando: {paquete_path}")
-                        if isfile(paquete_path):
-                            remove(paquete_path)
-                        else:
-                            rmtree(paquete_path)
+#    elif tipo == "paquetes":
+#        chdir(RUTA)
+#        for paquete in listdir():
+#            if paquete != "act":
+#                print(f"\nUbicación actual: paquete {paquete}")
+#                chdir(join(RUTA, paquete))
+#                for paquete_path in listdir():
+#                    protegido = ["PKGBUILD", ".SRCINFO", ".git"]
+#                    if paquete_path not in protegido:
+#                        print(f"Eliminando: {paquete_path}")
+#                        if isfile(paquete_path):
+#                            remove(paquete_path)
+#                        else:
+#                            rmtree(paquete_path)
+    elif tipo == "huerfanos":
+        try:
+            huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()  # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes huérfanos
+        except sb.CalledProcessError as e:
+            print(Fore.YELLOW + f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
+            sys.exit(1)
+        print("Se encontraron los siguientes paquetes huérfanos:\n")
+        print(huerfanos)
+        eliminar = input("\n¿Desea eliminar los huérfanos del sistema? (S/N): ")
+        if eliminar.strip().lower() == "s":
+            try:
+                sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
+            except sb.CalledProcessError as e:
+                print(Fore.RED + f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
     else:
-        print(Fore.YELLOW + "El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'paquetes'")
+        print(Fore.YELLOW + "El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")

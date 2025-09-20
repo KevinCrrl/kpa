@@ -77,6 +77,7 @@ try:
 -D paquete para desinstalar. -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.
 -C paquete para consultar sobre un paquete (abre un navegador con la página del paquete en el AUR)
 -R paquete para reinstalar un paquete instalado por kpa
+-L debug/huerfanos, -L debug elimina todo paquetes que tenga -debug en su nombre, -L huerfanos elimina todo paquete que no sea necesitado por otro y no haya sido instalado por el usuario.
 
 Recuerde crear el archivo kpa.json para configurar kpa correctamente, vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un ejemplo de como debería ser el archivo.""")
             break
