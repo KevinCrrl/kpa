@@ -15,14 +15,19 @@
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
 from xdg.BaseDirectory import xdg_cache_home
+from pkgbuild_parser import (
+    Parser,
+    ParserKeyError,
+    ParserFileError,
+    ParserNoneTypeError
+)
 from colorama import (
     init,
     Fore
 )
 from os.path import (
     exists,
-    join,
-    isfile
+    join
 )
 from shutil import (
     rmtree,
@@ -58,9 +63,8 @@ def clonar(paquete):
 
 
 def visor(ruta_archivo):
-    with open(ruta_archivo, "r", encoding="utf-8") as a_recorrer:
-        for linea in a_recorrer:
-            print(linea.strip())
+    with open(ruta_archivo, "r", encoding="utf-8") as archivo:
+        print(archivo.read())
 
 
 def no_aur(ruta):
@@ -74,6 +78,8 @@ def eula_detectado(ruta):
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
             return True
+    if "propietary" in Parser(join(ruta, "PKGBUILD")).get_license():
+        return True
     return False
 
 
@@ -140,9 +146,9 @@ def actualizar_uno(paquete):
         chdir(join(RUTA, "act"))
         try:
             clonar(paquete)
-            with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
-                comparar = antiguo.read() == nuevo.read()
-            if comparar:
+            antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
+            nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
+            if antiguo.get_full_package_name() == nuevo.get_full_package_name():
                 print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
                 rmtree(join(RUTA, "act", paquete))
             else:
@@ -172,7 +178,7 @@ def desinstalar(paquete):
     if confirmacion.strip().lower() == "s":
         try:
             rmtree(join(RUTA, paquete))
-            sb.run([datos["root"], "pacman", "-Rns", paquete, "--noconfirm"], check=True)
+            sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
         except FileNotFoundError:
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
         except sb.CalledProcessError:
@@ -216,20 +222,6 @@ def limpiar(tipo):
                         sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
                     except sb.CalledProcessError:
                         print(Fore.RED + "ERROR: Hubo un fallo al intentar remover el paquete.\n")
-#    elif tipo == "paquetes":
-#        chdir(RUTA)
-#        for paquete in listdir():
-#            if paquete != "act":
-#                print(f"\nUbicación actual: paquete {paquete}")
-#                chdir(join(RUTA, paquete))
-#                for paquete_path in listdir():
-#                    protegido = ["PKGBUILD", ".SRCINFO", ".git"]
-#                    if paquete_path not in protegido:
-#                        print(f"Eliminando: {paquete_path}")
-#                        if isfile(paquete_path):
-#                            remove(paquete_path)
-#                        else:
-#                            rmtree(paquete_path)
     elif tipo == "huerfanos":
         try:
             huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()  # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes huérfanos
