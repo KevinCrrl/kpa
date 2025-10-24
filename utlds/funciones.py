@@ -131,27 +131,33 @@ def instalar(paquete):
     pkgbuild(paquete)  # actualización por defecto queda en False
 
 
+def actualizar_simple(paquete):
+    chdir(join(RUTA, "act"))
+    try:
+        clonar(paquete)
+        antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
+        nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
+        if antiguo.get_full_package_name() == nuevo.get_full_package_name():
+            print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+            rmtree(join(RUTA, "act", paquete))
+        else:
+            rmtree(join(RUTA, paquete))
+            move(join(RUTA, "act", paquete), join(RUTA))
+            chdir(join(RUTA, paquete))
+            pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+    except sb.CalledProcessError as e:
+        print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+
+
 def actualizar_uno(paquete):
     if exists(join(RUTA, paquete)):
         if paquete in datos["ignorar"]:
             print(Fore.YELLOW + "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
             forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
             if forzar.strip().lower() == "s":
-                chdir(join(RUTA, "act"))
-                try:
-                    clonar(paquete)
-                    antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
-                    nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
-                    if antiguo.get_full_package_name() == nuevo.get_full_package_name():
-                        print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
-                        rmtree(join(RUTA, "act", paquete))
-                    else:
-                        rmtree(join(RUTA, paquete))
-                        move(join(RUTA, "act", paquete), join(RUTA))
-                        chdir(join(RUTA, paquete))
-                        pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
-                except sb.CalledProcessError as e:
-                    print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+                actualizar_simple(paquete)
+        else:
+            actualizar_simple(paquete)
     else:
         print(Fore.RED + f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
