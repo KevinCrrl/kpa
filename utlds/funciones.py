@@ -99,7 +99,7 @@ def pkgbuild(paquete, actualizacion=False):
             sb.run([datos["visor"], PKGBUILD], check=True)
         except sb.CalledProcessError:
             no_aur(join(RUTA, paquete))
-    confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿desea continuar con la construcción? (s,n): ")
+    confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
         print(Fore.BLUE + "Creando paquete con makepkg...")
         time.sleep(3)
@@ -143,7 +143,7 @@ def actualizar_uno(paquete):
                     antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
                     nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
                     if antiguo.get_full_package_name() == nuevo.get_full_package_name():
-                        print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
+                        print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
                         rmtree(join(RUTA, "act", paquete))
                     else:
                         rmtree(join(RUTA, paquete))
@@ -168,7 +168,7 @@ def actualizar_arg(paquete):
 
 def desinstalar(paquete):
     print(Fore.YELLOW + f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
-    confirmacion = input("¿Desea continuar? (s/n): ")
+    confirmacion = input("¿Desea continuar? (S/N): ")
     if confirmacion.strip().lower() == "s":
         try:
             rmtree(join(RUTA, paquete))
