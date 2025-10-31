@@ -178,7 +178,7 @@ def desinstalar(paquete):
     if confirmacion.strip().lower() == "s":
         try:
             rmtree(join(RUTA, paquete))
-            sb.run([datos["root"], "pacman", "-Rn", paquete, "--noconfirm"], check=True)
+            sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
         except FileNotFoundError:
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
         except sb.CalledProcessError:
