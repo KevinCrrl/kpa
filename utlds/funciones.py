@@ -15,14 +15,16 @@
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
 from xdg.BaseDirectory import xdg_cache_home
+from pkgbuild_parser import (
+    Parser
+)
 from colorama import (
     init,
     Fore
 )
 from os.path import (
     exists,
-    join,
-    isfile
+    join
 )
 from shutil import (
     rmtree,
@@ -58,9 +60,8 @@ def clonar(paquete):
 
 
 def visor(ruta_archivo):
-    with open(ruta_archivo, "r", encoding="utf-8") as a_recorrer:
-        for linea in a_recorrer:
-            print(linea.strip())
+    with open(ruta_archivo, "r", encoding="utf-8") as archivo:
+        print(archivo.read())
 
 
 def no_aur(ruta):
@@ -74,6 +75,8 @@ def eula_detectado(ruta):
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
             return True
+    if "propietary" in Parser(join(ruta, "PKGBUILD")).get_license():
+        return True
     return False
 
 
@@ -96,7 +99,7 @@ def pkgbuild(paquete, actualizacion=False):
             sb.run([datos["visor"], PKGBUILD], check=True)
         except sb.CalledProcessError:
             no_aur(join(RUTA, paquete))
-    confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿desea continuar con la construcción? (s,n): ")
+    confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
         print(Fore.BLUE + "Creando paquete con makepkg...")
         time.sleep(3)
@@ -128,30 +131,33 @@ def instalar(paquete):
     pkgbuild(paquete)  # actualización por defecto queda en False
 
 
+def actualizar_simple(paquete):
+    chdir(join(RUTA, "act"))
+    try:
+        clonar(paquete)
+        antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
+        nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
+        if antiguo.get_full_package_name() == nuevo.get_full_package_name():
+            print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+            rmtree(join(RUTA, "act", paquete))
+        else:
+            rmtree(join(RUTA, paquete))
+            move(join(RUTA, "act", paquete), join(RUTA))
+            chdir(join(RUTA, paquete))
+            pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+    except sb.CalledProcessError as e:
+        print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+
+
 def actualizar_uno(paquete):
     if exists(join(RUTA, paquete)):
         if paquete in datos["ignorar"]:
             print(Fore.YELLOW + "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
             forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
             if forzar.strip().lower() == "s":
-                pass
-            else:
-                sys.exit(0)
-        chdir(join(RUTA, "act"))
-        try:
-            clonar(paquete)
-            with open(join(RUTA, paquete, "PKGBUILD"), 'rb') as antiguo, open(join(RUTA, "act", paquete, "PKGBUILD"), 'rb') as nuevo:
-                comparar = antiguo.read() == nuevo.read()
-            if comparar:
-                print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, los PKGBUILD siguen siendo iguales.\n")
-                rmtree(join(RUTA, "act", paquete))
-            else:
-                rmtree(join(RUTA, paquete))
-                move(join(RUTA, "act", paquete), join(RUTA))
-                chdir(join(RUTA, paquete))
-                pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
-        except sb.CalledProcessError as e:
-            print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+                actualizar_simple(paquete)
+        else:
+            actualizar_simple(paquete)
     else:
         print(Fore.RED + f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
@@ -168,11 +174,11 @@ def actualizar_arg(paquete):
 
 def desinstalar(paquete):
     print(Fore.YELLOW + f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
-    confirmacion = input("¿Desea continuar? (s/n): ")
+    confirmacion = input("¿Desea continuar? (S/N): ")
     if confirmacion.strip().lower() == "s":
         try:
             rmtree(join(RUTA, paquete))
-            sb.run([datos["root"], "pacman", "-Rns", paquete, "--noconfirm"], check=True)
+            sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
         except FileNotFoundError:
             print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
         except sb.CalledProcessError:
@@ -216,20 +222,6 @@ def limpiar(tipo):
                         sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
                     except sb.CalledProcessError:
                         print(Fore.RED + "ERROR: Hubo un fallo al intentar remover el paquete.\n")
-#    elif tipo == "paquetes":
-#        chdir(RUTA)
-#        for paquete in listdir():
-#            if paquete != "act":
-#                print(f"\nUbicación actual: paquete {paquete}")
-#                chdir(join(RUTA, paquete))
-#                for paquete_path in listdir():
-#                    protegido = ["PKGBUILD", ".SRCINFO", ".git"]
-#                    if paquete_path not in protegido:
-#                        print(f"Eliminando: {paquete_path}")
-#                        if isfile(paquete_path):
-#                            remove(paquete_path)
-#                        else:
-#                            rmtree(paquete_path)
     elif tipo == "huerfanos":
         try:
             huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()  # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes huérfanos
