@@ -16,7 +16,8 @@
 
 from xdg.BaseDirectory import xdg_cache_home
 from pkgbuild_parser import (
-    Parser
+    Parser,
+    parser_core
 )
 from colorama import (
     init,
@@ -37,6 +38,7 @@ from os import (
 )
 from pathlib import Path
 from utlds.parser import datos
+from utlds.aurapi import existe, verificar_paquetes
 import subprocess as sb
 import webbrowser
 import time
@@ -101,6 +103,21 @@ def pkgbuild(paquete, actualizacion=False):
             no_aur(join(RUTA, paquete))
     confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
+        pkg = Parser(PKGBUILD)
+        try:
+            dependencias: list = pkg.get_depends() + pkg.get_makedepends()
+        except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
+            print(Fore.RED + "Error al intentar obtener las dependencias del paquete.")
+            dependencias = []
+        print(dependencias)
+        en_aur: list = verificar_paquetes(dependencias)
+        if len(en_aur) != 0:
+            print(Fore.YELLOW + f"Las siguientes dependencias de este paquete están en el AUR: {en_aur}")
+            print("Estas dependencias se instalarán con KPA para evitar errores...")
+            for paquete_aur in en_aur:
+                # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
+                instalar(paquete_aur)
+            chdir(join(RUTA, paquete))
         print(Fore.BLUE + "Creando paquete con makepkg...")
         time.sleep(3)
         try:

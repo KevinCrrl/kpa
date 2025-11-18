@@ -71,7 +71,7 @@ else:
 try:
     for arg, funcion in args.items():
         if sys.argv[1] == "-h":
-            print("""Argumentos válidos en KPA Versión 1.6.1-beta:
+            print("""Argumentos válidos en KPA Versión 1.7.0-beta:
 -I paquete para instalar
 -A paquete para actualizar un paquete instalado por kpa(o "-A todo" para actualización completa de todo lo instalado con kpa)
 -D paquete para desinstalar. -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.
@@ -81,7 +81,7 @@ try:
 
 Recuerde crear el archivo kpa.json para configurar kpa correctamente, vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un ejemplo de como debería ser el archivo.""")
             break
-        elif sys.argv[1] == arg:
+        if sys.argv[1] == arg:
             funcion(sys.argv[2])
             break
 
