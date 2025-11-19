@@ -4,10 +4,8 @@
 
 [Versión estable en AUR](https://aur.archlinux.org/packages/kpa-bin)
 
-### Documentación para la versión más reciente
+### Documentación para la versión más reciente y estable
 
-[Versión más reciente](https://kevincrrl.github.io/KevinCrrl/documentacion/kpa.html)
+[Documentación para la versión Stable](https://kevincrrl.github.io/KevinCrrl/documentacion/kpa.html)
 
-### Documentación para versiones anteriores a 1.3.0
-
-[Anteriores](docs/anteriores.md)
+Las versiones Beta no tienen documentación disponible
