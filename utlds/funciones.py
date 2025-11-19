@@ -77,7 +77,8 @@ def eula_detectado(ruta):
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
             return True
-    if "propietary" in Parser(join(ruta, "PKGBUILD")).get_license():
+    license = Parser(join(ruta, "PKGBUILD")).get_license()
+    if "proprietary" in license or "Proprietary" in license:
         return True
     return False
 
