@@ -112,12 +112,21 @@ def pkgbuild(paquete, actualizacion=False):
             dependencias = []
         print(dependencias)
         en_aur: list = verificar_paquetes(dependencias)
-        if len(en_aur) != 0:
-            print(Fore.YELLOW + f"Las siguientes dependencias de este paquete están en el AUR: {en_aur}")
-            print("Estas dependencias se instalarán con KPA para evitar errores...")
-            for paquete_aur in en_aur:
-                # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
-                instalar(paquete_aur)
+        # Limpiar paquetes repetidos
+        en_aur_limpio: list = []
+        for paquete_en_aur in en_aur:
+            if paquete_en_aur not in en_aur_limpio:
+                en_aur_limpio.append(paquete_en_aur)
+        if len(en_aur_limpio) != 0:
+            print(Fore.YELLOW + f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
+            print("Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
+            for paquete_aur in en_aur_limpio:
+                # Verificar si el paquete ya está instalado para evitar errores
+                try:
+                    sb.run(["pacman", "-Qi", paquete_aur], check=True, capture_output=True)
+                except sb.CalledProcessError:  # Error producido cuando el paquete no está instalado
+                    # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
+                    instalar(paquete_aur)
             chdir(join(RUTA, paquete))
         print(Fore.BLUE + "Creando paquete con makepkg...")
         time.sleep(3)
