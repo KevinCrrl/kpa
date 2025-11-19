@@ -28,16 +28,13 @@ from colorama import (
 )
 from os.path import (
     exists,
-    expanduser,
     join
 )
 from os import (
     geteuid,
     makedirs
 )
-from utlds.multiple import multiarg
-from shutil import move
-from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
+from xdg.BaseDirectory import xdg_cache_home
 import sys
 
 init(autoreset=True)
@@ -48,7 +45,6 @@ args = {
     "-D": desinstalar,
     "-C": consultar,
     "-R": reinstalar,
-    "-M": multiarg,
     "-L": limpiar,
 }
 
@@ -68,10 +64,12 @@ else:
     print("Creando ruta para KPA...\n")
     makedirs(RUTA, exist_ok=True)
 
-try:
-    for arg, funcion in args.items():
-        if sys.argv[1] == "-h":
-            print("""Argumentos válidos en KPA Versión 1.7.0-beta:
+
+def main():
+    try:
+        for arg, funcion in args.items():
+            if sys.argv[1] == "-h":
+                print("""Argumentos válidos en KPA Versión 1.7.0-beta:
 -I paquete para instalar
 -A paquete para actualizar un paquete instalado por kpa(o "-A todo" para actualización completa de todo lo instalado con kpa)
 -D paquete para desinstalar. -D solo desinstala paquetes instalados por este AUR helper, no desinstala paquetes de otras fuentes como otro AUR helper o Pacman.
@@ -80,14 +78,19 @@ try:
 -L debug/huerfanos, -L debug elimina todo paquetes que tenga -debug en su nombre, -L huerfanos elimina todo paquete que no sea necesitado por otro y no haya sido instalado por el usuario.
 
 Recuerde crear el archivo kpa.json para configurar kpa correctamente, vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un ejemplo de como debería ser el archivo.""")
-            break
-        if sys.argv[1] == arg:
-            funcion(sys.argv[2])
-            break
+                break
+            if sys.argv[1] == arg:
+                for paquete in sys.argv[2:]:
+                    funcion(paquete)
+                break
 
-    else:
-        print(Fore.RED + "ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
-except IndexError:
-    print(Fore.RED + "ERROR: Ingresó una cantidad incorrecta de argumentos.")
-except KeyboardInterrupt:
-    print(Fore.YELLOW + "\nSaliendo del programa por interrupción de teclado.")
+        else:
+            print(Fore.RED + "ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
+    except IndexError:
+        print(Fore.RED + "ERROR: Ingresó una cantidad incorrecta de argumentos.")
+    except KeyboardInterrupt:
+        print(Fore.YELLOW + "\nSaliendo del programa por interrupción de teclado.")
+
+
+if __name__ == "__main__":
+    main()

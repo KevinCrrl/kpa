@@ -110,7 +110,6 @@ def pkgbuild(paquete, actualizacion=False):
         except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
             print(Fore.RED + "Error al intentar obtener las dependencias del paquete.")
             dependencias = []
-        print(dependencias)
         en_aur: list = verificar_paquetes(dependencias)
         # Limpiar paquetes repetidos
         en_aur_limpio: list = []
@@ -120,6 +119,7 @@ def pkgbuild(paquete, actualizacion=False):
         if len(en_aur_limpio) != 0:
             print(Fore.YELLOW + f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
             print("Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
+            time.sleep(1)
             for paquete_aur in en_aur_limpio:
                 # Verificar si el paquete ya está instalado para evitar errores
                 try:
