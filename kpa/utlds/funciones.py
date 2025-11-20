@@ -37,8 +37,8 @@ from os import (
     remove
 )
 from pathlib import Path
-from utlds.parser import datos
-from utlds.aurapi import existe, verificar_paquetes
+from kpa.utlds.parser import datos
+from kpa.utlds.aurapi import verificar_paquetes
 import subprocess as sb
 import webbrowser
 import time

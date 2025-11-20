@@ -14,7 +14,7 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from utlds.funciones import (
+from kpa.utlds.funciones import (
     instalar,
     actualizar_arg,
     desinstalar,
