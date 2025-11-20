@@ -90,7 +90,3 @@ Recuerde crear el archivo kpa.json para configurar kpa correctamente, vea en htt
         print(Fore.RED + "ERROR: Ingresó una cantidad incorrecta de argumentos.")
     except KeyboardInterrupt:
         print(Fore.YELLOW + "\nSaliendo del programa por interrupción de teclado.")
-
-
-if __name__ == "__main__":
-    main()
