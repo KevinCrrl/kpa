@@ -14,6 +14,7 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
+import subprocess as sb
 import requests
 
 BASE_URL = "https://aur.archlinux.org/rpc/?v=5&type="
@@ -29,11 +30,19 @@ def existe(paquete) -> bool:
     return respuesta["resultcount"] > 0
 
 
+def oficial_en_repos(paquete) -> bool:
+    try:
+        sb.run(["pacman", "-Si", paquete], check=True, shell=False)
+    except sb.CalledProcessError:
+        return False  # Si se produce este error es porque el paquete no existe
+    return True
+
+
 def verificar_paquetes(paquetes: list) -> list:
-    """Retorna una lista de paquetes que existen en el AUR
-    a partir de una lista con paquetes de origenes desconocidos."""
+    """Retorna una lista de paquetes que existen en el AUR y no en los repositorios
+    oficiales a partir de una lista con paquetes de origenes desconocidos."""
     paquetes_aur: list = []
     for paquete in paquetes:
-        if existe(paquete):
+        if existe(paquete) and not oficial_en_repos(paquete):
             paquetes_aur.append(paquete)
     return paquetes_aur
