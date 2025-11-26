@@ -32,7 +32,7 @@ def existe(paquete) -> bool:
 
 def oficial_en_repos(paquete) -> bool:
     try:
-        sb.run(["pacman", "-Si", paquete], check=True, shell=False)
+        sb.run(["pacman", "-Si", paquete], check=True, shell=False, capture_output=True)
     except sb.CalledProcessError:
         return False  # Si se produce este error es porque el paquete no existe
     return True
