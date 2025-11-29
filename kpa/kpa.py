@@ -14,17 +14,13 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from kpa.utlds.funciones import (
+from kpa.funciones import (
     instalar,
     actualizar_arg,
     desinstalar,
     consultar,
     reinstalar,
     limpiar
-)
-from colorama import (
-    init,
-    Fore
 )
 from os.path import (
     exists,
@@ -34,10 +30,9 @@ from os import (
     geteuid,
     makedirs
 )
+from kpa.colorprints import *
 from xdg.BaseDirectory import xdg_cache_home
 import sys
-
-init(autoreset=True)
 
 args = {
     "-I": instalar,
@@ -49,16 +44,16 @@ args = {
 }
 
 if geteuid() == 0:
-    print(Fore.YELLOW + "ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
+    yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
     print("Vuelva a ejecutar KPA como usuario no-root.")
     sys.exit(1)
 
 # Verificación de rutas
 
-RUTA = join(xdg_cache_home, "kpa/act")
+RUTA = join(xdg_cache_home, "kpa")
 
 if exists(RUTA):
-    print(Fore.GREEN + "Ruta de KPA encontrada...\n")
+    green("Ruta de KPA encontrada...\n")
 
 else:
     print("Creando ruta para KPA...\n")
@@ -69,7 +64,7 @@ def main():
     try:
         for arg, funcion in args.items():
             if sys.argv[1] == "-h":
-                print("""Argumentos válidos en KPA versión 1.7.0-beta:
+                print("""Argumentos válidos en KPA versión 2.0.0-beta:
 
     Instalar paquetes:
         -I [PAQUETES]
@@ -101,8 +96,8 @@ ejemplo de como debería ser el archivo.""")
                 break
 
         else:
-            print(Fore.RED + "ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
+            red("ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
     except IndexError:
-        print(Fore.RED + "ERROR: Ingresó una cantidad incorrecta de argumentos.")
+        red("ERROR: Ingresó una cantidad incorrecta de argumentos.")
     except KeyboardInterrupt:
-        print(Fore.YELLOW + "\nSaliendo del programa por interrupción de teclado.")
+        yellow("\nSaliendo del programa por interrupción de teclado.")
