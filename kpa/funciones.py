@@ -133,6 +133,7 @@ def instalar(paquete):
 
 
 def actualizar_simple(paquete):
+    green(f"Buscando actualización para {paquete}")
     chdir(join(RUTA, paquete))
     try:
         antiguo = Parser("PKGBUILD")

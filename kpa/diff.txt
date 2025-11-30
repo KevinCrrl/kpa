@@ -1,0 +1,561 @@
+diff --git a/kpa/utlds/__init__.py b/kpa/__init__.py
+similarity index 100%
+rename from kpa/utlds/__init__.py
+rename to kpa/__init__.py
+diff --git a/kpa/utlds/aurapi.py b/kpa/aurapi.py
+similarity index 59%
+rename from kpa/utlds/aurapi.py
+rename to kpa/aurapi.py
+index 7dd4200..e3402af 100644
+--- a/kpa/utlds/aurapi.py
++++ b/kpa/aurapi.py
+@@ -1,18 +1,5 @@
+-"""
+-    Copyright (C) 2025 KevinCrrl
+-
+-    Este programa es software libre: puedes redistribuirlo y/o modificarlo
+-    está bajo los términos de la Licencia Pública General GNU publicada por
+-    la Free Software Foundation, ya sea la versión 3 de la Licencia, o
+-    (a su elección) cualquier versión posterior.
+-
+-    Este programa se distribuye con la esperanza de que sea útil,
+-    pero SIN NINGUNA GARANTÍA; sin siquiera la garantía implícita de
+-    COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Véase la
+-    Licencia Pública General GNU para más detalles.
+-
+-    Debería haber recibido una copia de la Licencia Pública General GNU
+-    junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
++# Copyright (C) 2025 KevinCrrl
++# Licencia GPL 3 o superior (ver archivo LICENSE)
+ 
+ import subprocess as sb
+ import requests
+diff --git a/kpa/colorprints.py b/kpa/colorprints.py
+new file mode 100644
+index 0000000..6dbb2aa
+--- /dev/null
++++ b/kpa/colorprints.py
+@@ -0,0 +1,26 @@
++# Copyright (C) 2025 KevinCrrl
++# Licencia GPL 3 o superior (ver archivo LICENSE)
++
++from colorama import init, Fore
++
++init(autoreset=True)
++
++
++def red(texto):
++    print(Fore.RED + texto)
++
++
++def yellow(texto):
++    print(Fore.YELLOW + texto)
++
++
++def blue(texto):
++    print(Fore.BLUE + texto)
++
++
++def green(texto):
++    print(Fore.GREEN + texto)
++
++
++def yellow_input(texto):
++    return input(Fore.YELLOW + texto)
+diff --git a/kpa/utlds/funciones.py b/kpa/funciones.py
+similarity index 61%
+rename from kpa/utlds/funciones.py
+rename to kpa/funciones.py
+index 9b0d4de..6860e92 100644
+--- a/kpa/utlds/funciones.py
++++ b/kpa/funciones.py
+@@ -1,28 +1,12 @@
+-"""
+-    Copyright (C) 2025 KevinCrrl
+-
+-    Este programa es software libre: puedes redistribuirlo y/o modificarlo
+-    está bajo los términos de la Licencia Pública General GNU publicada por
+-    la Free Software Foundation, ya sea la versión 3 de la Licencia, o
+-    (a su elección) cualquier versión posterior.
+-
+-    Este programa se distribuye con la esperanza de que sea útil,
+-    pero SIN NINGUNA GARANTÍA; sin siquiera la garantía implícita de
+-    COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Véase la
+-    Licencia Pública General GNU para más detalles.
+-
+-    Debería haber recibido una copia de la Licencia Pública General GNU
+-    junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
++# Copyright (C) 2025 KevinCrrl
++# Licencia GPL 3 o superior (ver archivo LICENSE)
+ 
++from kpa.colorprints import yellow_input
+ from xdg.BaseDirectory import xdg_cache_home
+ from pkgbuild_parser import (
+     Parser,
+     parser_core
+ )
+-from colorama import (
+-    init,
+-    Fore
+-)
+ from os.path import (
+     exists,
+     join
+@@ -34,59 +18,49 @@ from shutil import (
+ from os import (
+     listdir,
+     chdir,
+-    remove
++    remove,
+ )
+ from pathlib import Path
+-from kpa.utlds.parser import datos
+-from kpa.utlds.aurapi import verificar_paquetes
++from kpa.parser import datos
++from kpa.aurapi import verificar_paquetes
++from kpa.colorprints import *
++from kpa import git
+ import subprocess as sb
+ import webbrowser
+ import time
+ import sys
+ 
+-init(autoreset=True)
+-
+ RUTA = join(xdg_cache_home, "kpa")
+ 
+ 
+-def clonar(paquete):
+-    if datos["clone_branch"]:
+-        url_repo = f"--branch {paquete} --single-branch {datos['url']} {paquete}"
+-    else:
+-        url_repo = f"{datos['url']}/{paquete}.git"
+-
+-    if datos["torsocks"]:
+-        sb.run(["torsocks", "git", "clone"] + url_repo.split(), check=True)
+-    else:
+-        sb.run(["git", "clone"] + url_repo.split(), check=True)
+-
+-
+ def visor(ruta_archivo):
+     with open(ruta_archivo, "r", encoding="utf-8") as archivo:
+         print(archivo.read())
+ 
+ 
+ def no_aur(ruta):
+-    print(Fore.RED + "ERROR: Intentaste clonar un repositorio no existente del AUR.")
++    red("ERROR: Intentaste clonar un repositorio no existente del AUR.")
+     rmtree(ruta)
+     sys.exit(1)
+ 
+ 
+ def eula_detectado(ruta):
+     nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula", "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
++    licenses_comunes = ["Proprietary", "proprietary", "Custom", "custom"]
+     for archivo in listdir(ruta):
+         if archivo in nombres_comunes:
+             return True
+     license = Parser(join(ruta, "PKGBUILD")).get_license()
+-    if "proprietary" in license or "Proprietary" in license:
+-        return True
++    for license_comun in licenses_comunes:
++        if license_comun in license:
++            return True
+     return False
+ 
+ 
+ def pkgbuild(paquete, actualizacion=False):
+     print("\n")
+     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
+-        print(Fore.YELLOW + "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
++        yellow("ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
+         pregunta = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
+         if pregunta.strip().lower() != "s":
+             rmtree(join(RUTA, paquete))
+@@ -102,13 +76,13 @@ def pkgbuild(paquete, actualizacion=False):
+             sb.run([datos["visor"], PKGBUILD], check=True)
+         except sb.CalledProcessError:
+             no_aur(join(RUTA, paquete))
+-    confirmacion = input(Fore.YELLOW + "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
++    confirmacion = yellow_input("\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
+     if confirmacion.strip().lower() == "s":
+         pkg = Parser(PKGBUILD)
+         try:
+             dependencias: list = pkg.get_depends() + pkg.get_makedepends()
+         except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
+-            print(Fore.RED + "Error al intentar obtener las dependencias del paquete.")
++            red("Error al intentar obtener las dependencias del paquete.")
+             dependencias = []
+         en_aur: list = verificar_paquetes(dependencias)
+         # Limpiar paquetes repetidos
+@@ -117,7 +91,7 @@ def pkgbuild(paquete, actualizacion=False):
+             if paquete_en_aur not in en_aur_limpio:
+                 en_aur_limpio.append(paquete_en_aur)
+         if len(en_aur_limpio) != 0:
+-            print(Fore.YELLOW + f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
++            yellow(f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
+             print("Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
+             time.sleep(1)
+             for paquete_aur in en_aur_limpio:
+@@ -128,16 +102,16 @@ def pkgbuild(paquete, actualizacion=False):
+                     # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
+                     instalar(paquete_aur)
+             chdir(join(RUTA, paquete))
+-        print(Fore.BLUE + "Creando paquete con makepkg...")
++        blue("Creando paquete con makepkg...")
+         time.sleep(3)
+         try:
+-            if datos["torsocks"]:
+-                sb.run(["torsocks", "makepkg", "-s"], check=True)  # Descargar el source usando TOR
++            if datos["proxychains4"]:
++                sb.run(["proxychains4", "makepkg", "-sf"], check=True)  # Descargar el source usando TOR
+             else:
+-                sb.run(["makepkg", "-s"], check=True)
++                sb.run(["makepkg", "-sf"], check=True)
+             sb.run([datos["root"], "pacman", "-U"] + list(Path(join(RUTA, paquete)).glob("*.pkg.tar.zst")), check=True)  # Instala fuera pues si se usa TOR puede fallar la instalación.
+         except sb.CalledProcessError:
+-            print(Fore.RED + "ERROR: Fallo al construir o instalar el paquete con makepkg.")
++            red("ERROR: Fallo al construir o instalar el paquete con makepkg.")
+     else:
+         # Correción de bug que eliminaba la carpeta de un paquete como si estuviera instalando cuando a veces es una actualización
+         # Esta correción evita que se borre la carpeta en caso de actualización y solo se borre si no se quiere instalar por primera vez
+@@ -147,46 +121,42 @@ def pkgbuild(paquete, actualizacion=False):
+ 
+ def instalar(paquete):
+     chdir(RUTA)
+-    print(Fore.BLUE + f"Clonando repositorio de {paquete}...")
++    blue(f"Clonando repositorio de {paquete}...")
+     time.sleep(1)
+     try:
+-        clonar(paquete)
++        git.clonar(paquete)
+     except sb.CalledProcessError:
+-        print(Fore.RED + "ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
++        red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
+         sys.exit(1)
+     chdir(join(RUTA, paquete))
+     pkgbuild(paquete)  # actualización por defecto queda en False
+ 
+ 
+ def actualizar_simple(paquete):
+-    chdir(join(RUTA, "act"))
++    chdir(join(RUTA, paquete))
+     try:
+-        clonar(paquete)
+-        antiguo = Parser(join(RUTA, paquete, "PKGBUILD"))
+-        nuevo = Parser(join(RUTA, "act", paquete, "PKGBUILD"))
++        antiguo = Parser("PKGBUILD")
++        git.pull()
++        nuevo = Parser("PKGBUILD")
+         if antiguo.get_full_package_name() == nuevo.get_full_package_name():
+-            print(Fore.YELLOW + f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+-            rmtree(join(RUTA, "act", paquete))
++            yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+         else:
+-            rmtree(join(RUTA, paquete))
+-            move(join(RUTA, "act", paquete), join(RUTA))
+-            chdir(join(RUTA, paquete))
+             pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+     except sb.CalledProcessError as e:
+-        print(Fore.RED + f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
++        red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+ 
+ 
+ def actualizar_uno(paquete):
+     if exists(join(RUTA, paquete)):
+         if paquete in datos["ignorar"]:
+-            print(Fore.YELLOW + "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
++            yellow("ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
+             forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
+             if forzar.strip().lower() == "s":
+                 actualizar_simple(paquete)
+         else:
+             actualizar_simple(paquete)
+     else:
+-        print(Fore.RED + f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
++        red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
+ 
+ 
+ def actualizar_arg(paquete):
+@@ -200,16 +170,16 @@ def actualizar_arg(paquete):
+ 
+ 
+ def desinstalar(paquete):
+-    print(Fore.YELLOW + f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
++    yellow(f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
+     confirmacion = input("¿Desea continuar? (S/N): ")
+     if confirmacion.strip().lower() == "s":
+         try:
+             rmtree(join(RUTA, paquete))
+             sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
+         except FileNotFoundError:
+-            print(Fore.RED + "ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
++            red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
+         except sb.CalledProcessError:
+-            print(Fore.RED + "ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
++            red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
+ 
+ 
+ def consultar(paquete):
+@@ -217,7 +187,7 @@ def consultar(paquete):
+         nav = webbrowser.get(datos["navegador"])
+         nav.open(f"https://aur.archlinux.org/packages/{paquete}")
+     except webbrowser.Error:
+-        print(Fore.RED + f"ERROR: No se ha encontrado el navegador {datos['navegador']} que fue seleccionado.")
++        red(f"ERROR: No se ha encontrado el navegador {datos['navegador']} que fue seleccionado.")
+ 
+ 
+ def reinstalar(paquete):
+@@ -230,7 +200,7 @@ def reinstalar(paquete):
+         chdir(pdir)
+         pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
+     else:
+-        print(Fore.RED + f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
++        red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+ 
+ 
+ def limpiar(tipo):
+@@ -238,7 +208,7 @@ def limpiar(tipo):
+         try:
+             instalados = sb.check_output(["pacman", "-Qm"], text=True)
+         except sb.CalledProcessError:
+-            print(Fore.RED + "ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
++            red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
+             sys.exit(1)
+         for paquete in instalados.split("\n"):
+             if "debug" in paquete:
+@@ -248,12 +218,12 @@ def limpiar(tipo):
+                     try:
+                         sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
+                     except sb.CalledProcessError:
+-                        print(Fore.RED + "ERROR: Hubo un fallo al intentar remover el paquete.\n")
++                        red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
+     elif tipo == "huerfanos":
+         try:
+             huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()  # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes huérfanos
+         except sb.CalledProcessError as e:
+-            print(Fore.YELLOW + f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
++            yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
+             sys.exit(1)
+         print("Se encontraron los siguientes paquetes huérfanos:\n")
+         print(huerfanos)
+@@ -262,6 +232,6 @@ def limpiar(tipo):
+             try:
+                 sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
+             except sb.CalledProcessError as e:
+-                print(Fore.RED + f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
++                red(f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
+     else:
+-        print(Fore.YELLOW + "El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")
++        yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")
+diff --git a/kpa/git.py b/kpa/git.py
+new file mode 100644
+index 0000000..055946a
+--- /dev/null
++++ b/kpa/git.py
+@@ -0,0 +1,29 @@
++# Copyright (C) 2025 KevinCrrl
++# Licencia GPL 3 o superior (ver archivo LICENSE)
++
++import subprocess as sb
++from kpa.parser import datos
++
++
++def git_run(comando: list):
++    sb.run(comando, check=True, capture_output=True)
++
++
++def clonar(paquete):
++    if datos["clone_branch"]:
++        url_repo = f"--branch {paquete} --single-branch {datos['url']} {paquete}"
++    else:
++        url_repo = f"{datos['url']}/{paquete}.git"
++
++    if datos["proxychains4"]:
++        git_run(["proxychains4", "git", "clone"] + url_repo.split())
++    else:
++        git_run(["git", "clone"] + url_repo.split())
++
++
++def pull():
++    if datos["proxychains4"]:
++        git_run(["proxychains4", "git", "fetch", "origin"])
++    else:
++        git_run(["git", "fetch", "origin"])
++    git_run(["git", "reset", "--hard", "origin/master"])
+diff --git a/kpa/kpa.py b/kpa/kpa.py
+index b203841..bad6a2d 100644
+--- a/kpa/kpa.py
++++ b/kpa/kpa.py
+@@ -14,7 +14,7 @@
+     Debería haber recibido una copia de la Licencia Pública General GNU
+     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
+ 
+-from kpa.utlds.funciones import (
++from kpa.funciones import (
+     instalar,
+     actualizar_arg,
+     desinstalar,
+@@ -22,10 +22,6 @@ from kpa.utlds.funciones import (
+     reinstalar,
+     limpiar
+ )
+-from colorama import (
+-    init,
+-    Fore
+-)
+ from os.path import (
+     exists,
+     join
+@@ -34,11 +30,10 @@ from os import (
+     geteuid,
+     makedirs
+ )
++from kpa.colorprints import *
+ from xdg.BaseDirectory import xdg_cache_home
+ import sys
+ 
+-init(autoreset=True)
+-
+ args = {
+     "-I": instalar,
+     "-A": actualizar_arg,
+@@ -49,16 +44,16 @@ args = {
+ }
+ 
+ if geteuid() == 0:
+-    print(Fore.YELLOW + "ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
++    yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
+     print("Vuelva a ejecutar KPA como usuario no-root.")
+     sys.exit(1)
+ 
+ # Verificación de rutas
+ 
+-RUTA = join(xdg_cache_home, "kpa/act")
++RUTA = join(xdg_cache_home, "kpa")
+ 
+ if exists(RUTA):
+-    print(Fore.GREEN + "Ruta de KPA encontrada...\n")
++    green("Ruta de KPA encontrada...\n")
+ 
+ else:
+     print("Creando ruta para KPA...\n")
+@@ -69,7 +64,7 @@ def main():
+     try:
+         for arg, funcion in args.items():
+             if sys.argv[1] == "-h":
+-                print("""Argumentos válidos en KPA versión 1.7.0-beta:
++                print("""Argumentos válidos en KPA versión 2.0.0-beta:
+ 
+     Instalar paquetes:
+         -I [PAQUETES]
+@@ -101,8 +96,8 @@ ejemplo de como debería ser el archivo.""")
+                 break
+ 
+         else:
+-            print(Fore.RED + "ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
++            red("ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
+     except IndexError:
+-        print(Fore.RED + "ERROR: Ingresó una cantidad incorrecta de argumentos.")
++        red("ERROR: Ingresó una cantidad incorrecta de argumentos.")
+     except KeyboardInterrupt:
+-        print(Fore.YELLOW + "\nSaliendo del programa por interrupción de teclado.")
++        yellow("\nSaliendo del programa por interrupción de teclado.")
+diff --git a/kpa/utlds/parser.py b/kpa/parser.py
+similarity index 59%
+rename from kpa/utlds/parser.py
+rename to kpa/parser.py
+index 680077f..d7a05dd 100644
+--- a/kpa/utlds/parser.py
++++ b/kpa/parser.py
+@@ -1,31 +1,16 @@
+-"""
+-    Copyright (C) 2025 KevinCrrl
+-
+-    Este programa es software libre: puedes redistribuirlo y/o modificarlo
+-    está bajo los términos de la Licencia Pública General GNU publicada por
+-    la Free Software Foundation, ya sea la versión 3 de la Licencia, o
+-    (a su elección) cualquier versión posterior.
+-
+-    Este programa se distribuye con la esperanza de que sea útil,
+-    pero SIN NINGUNA GARANTÍA; sin siquiera la garantía implícita de
+-    COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Véase la
+-    Licencia Pública General GNU para más detalles.
+-
+-    Debería haber recibido una copia de la Licencia Pública General GNU
+-    junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
++# Copyright (C) 2025 KevinCrrl
++# Licencia GPL 3 o superior (ver archivo LICENSE)
+ 
+ from xdg.BaseDirectory import xdg_config_home
+ from os.path import join
+ import json
+-from colorama import init, Fore
++from kpa.colorprints import red
+ import jsonschema
+ import sys
+ 
+-init(autoreset=True)
+-
+ datos_kpa = {
+     "visor": "kpa",  # Visor independiente de KPA
+-    "torsocks": False,  # Evitar uso de Tor si no está instalado o configurado
++    "proxychains4": False,  # Evitar uso de proxy si no está instalado o configurado
+     "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
+     "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
+     "ignorar": [],  # No ignorar paquetes por defecto
+@@ -35,16 +20,15 @@ datos_kpa = {
+ }
+ 
+ # Crear copia
+-
+ datos_usuario = datos_kpa
+ 
+ try:
+     with open(join(xdg_config_home, "kpa", "kpa.json"), "r", encoding="utf-8") as cf:
+         datos_usuario = json.load(cf)
+ except FileNotFoundError:
+-    print(Fore.RED + "ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
++    red("ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
+ except json.decoder.JSONDecodeError:
+-    print(Fore.RED + "ERROR: No se pudo obtener contenido del archivo 'kpa.json'\n")
++    red("ERROR: No se pudo obtener contenido del archivo 'kpa.json'\n")
+ 
+ # Validacipon extra del archivo JSON usando jsonschema
+ 
+@@ -52,7 +36,7 @@ kpa_schema = {
+     "type": "object",
+     "properties": {
+         "visor": {"type": "string"},
+-        "torsocks": {"type": "boolean"},
++        "proxychains4": {"type": "boolean"},
+         "navegador": {"type": "string"},
+         "root": {"type": "string"},
+         "ignorar": {"type": "array", "items": {"type": "string"}},
+@@ -66,7 +50,7 @@ kpa_schema = {
+ try:
+     jsonschema.validate(datos_usuario, kpa_schema)
+ except jsonschema.exceptions.ValidationError as e:
+-    print(Fore.RED + f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
++    red(f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
+     sys.exit(1)
+ 
+ datos = {}  # Config definitiva que se irá completando
+diff --git a/pyproject.toml b/pyproject.toml
+index f3b353c..487d801 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "kpa"
+-version = "1.7.0-beta"
++version = "2.0.0-beta"
+ authors = [
+   { name="KevinCrrl" },
+ ]
+@@ -33,4 +33,3 @@ kpa = "kpa.kpa:main"
+ [tool.setuptools.packages.find]
+ where = ["."]
+ include = ["kpa*"]
+-exclude = ["utlds*"]
