@@ -139,6 +139,7 @@ def actualizar_simple(paquete):
         if antiguo.get_full_package_name() == nuevo.get_full_package_name():
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
+            blue("Actualización encontrada.")
             # Eliminar archivos caché
             rmtree("src")
             rmtree("pkg")
