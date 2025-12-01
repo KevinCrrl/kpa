@@ -11,26 +11,25 @@ from os.path import (
     exists,
     join
 )
-from shutil import (
-    rmtree,
-    move
-)
 from os import (
     listdir,
     chdir,
     remove,
 )
 from pathlib import Path
+from shutil import rmtree
 from kpa.parser import datos
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import *
 from kpa import git
 import subprocess as sb
-import webbrowser
-import time
 import sys
 
 RUTA = join(xdg_cache_home, "kpa")
+
+
+def encontrar_archivos(ruta: str, extension: str) -> list:
+    return list(Path(ruta).glob(f"*{extension}"))
 
 
 def visor(ruta_archivo):
@@ -65,20 +64,20 @@ def pkgbuild(paquete, actualizacion=False):
         if pregunta.strip().lower() != "s":
             rmtree(join(RUTA, paquete))
             sys.exit()
-    PKGBUILD = join(RUTA, paquete, "PKGBUILD")
+    archivo_pkgbuild = join(RUTA, paquete, "PKGBUILD")
     if datos["visor"] == "kpa":
         try:
-            visor(PKGBUILD)
+            visor(archivo_pkgbuild)
         except FileNotFoundError:
             no_aur(join(RUTA, paquete))
     else:
         try:
-            sb.run([datos["visor"], PKGBUILD], check=True)
+            sb.run([datos["visor"], archivo_pkgbuild], check=True)
         except sb.CalledProcessError:
             no_aur(join(RUTA, paquete))
     confirmacion = yellow_input("\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
-        pkg = Parser(PKGBUILD)
+        pkg = Parser(archivo_pkgbuild)
         try:
             dependencias: list = pkg.get_depends() + pkg.get_makedepends()
         except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
@@ -93,7 +92,6 @@ def pkgbuild(paquete, actualizacion=False):
         if len(en_aur_limpio) != 0:
             yellow(f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
             print("Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
-            time.sleep(1)
             for paquete_aur in en_aur_limpio:
                 # Verificar si el paquete ya está instalado para evitar errores
                 try:
@@ -103,7 +101,6 @@ def pkgbuild(paquete, actualizacion=False):
                     instalar(paquete_aur)
             chdir(join(RUTA, paquete))
         blue("Creando paquete con makepkg...")
-        time.sleep(3)
         try:
             if datos["proxychains4"]:
                 sb.run(["proxychains4", "makepkg", "-sf"], check=True)  # Descargar el source usando TOR
@@ -122,7 +119,6 @@ def pkgbuild(paquete, actualizacion=False):
 def instalar(paquete):
     chdir(RUTA)
     blue(f"Clonando repositorio de {paquete}...")
-    time.sleep(1)
     try:
         git.clonar(paquete)
     except sb.CalledProcessError:
@@ -134,7 +130,8 @@ def instalar(paquete):
 
 def actualizar_simple(paquete):
     green(f"Buscando actualización para {paquete}")
-    chdir(join(RUTA, paquete))
+    ruta_paquete = join(RUTA, paquete)
+    chdir(ruta_paquete)
     try:
         antiguo = Parser("PKGBUILD")
         git.pull()
@@ -142,6 +139,12 @@ def actualizar_simple(paquete):
         if antiguo.get_full_package_name() == nuevo.get_full_package_name():
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
+            # Eliminar archivos caché
+            rmtree("src")
+            rmtree("pkg")
+            comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + encontrar_archivos(ruta_paquete, ".tar.gz") + encontrar_archivos(ruta_paquete, ".tar.xz") + encontrar_archivos(ruta_paquete, ".deb")
+            for comprimido in comprimidos:
+                remove(comprimido)
             pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
     except sb.CalledProcessError as e:
         red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
@@ -183,14 +186,6 @@ def desinstalar(paquete):
             red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
 
 
-def consultar(paquete):
-    try:
-        nav = webbrowser.get(datos["navegador"])
-        nav.open(f"https://aur.archlinux.org/packages/{paquete}")
-    except webbrowser.Error:
-        red(f"ERROR: No se ha encontrado el navegador {datos['navegador']} que fue seleccionado.")
-
-
 def reinstalar(paquete):
     pdir = join(RUTA, paquete)
     if exists(pdir):
@@ -211,8 +206,9 @@ def limpiar(tipo):
         except sb.CalledProcessError:
             red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
             sys.exit(1)
-        for paquete in instalados.split("\n"):
-            if "debug" in paquete:
+          # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
+        for paquete in instalados.strip().split("\n"):
+            if paquete.split()[0].endswith("-debug"):
                 print(f"\nSe encontró el debug: {paquete}")
                 eliminar = input("¿Desea eliminarlo del sistema? (S/N): ")
                 if eliminar.strip().lower() == "s":
@@ -222,7 +218,7 @@ def limpiar(tipo):
                         red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
     elif tipo == "huerfanos":
         try:
-            huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()  # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes huérfanos
+            huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()
         except sb.CalledProcessError as e:
             yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
             sys.exit(1)

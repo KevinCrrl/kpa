@@ -18,7 +18,6 @@ from kpa.funciones import (
     instalar,
     actualizar_arg,
     desinstalar,
-    consultar,
     reinstalar,
     limpiar
 )
@@ -38,7 +37,6 @@ args = {
     "-I": instalar,
     "-A": actualizar_arg,
     "-D": desinstalar,
-    "-C": consultar,
     "-R": reinstalar,
     "-L": limpiar,
 }

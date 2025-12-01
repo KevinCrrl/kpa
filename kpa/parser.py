@@ -11,7 +11,6 @@ import sys
 datos_kpa = {
     "visor": "kpa",  # Visor independiente de KPA
     "proxychains4": False,  # Evitar uso de proxy si no está instalado o configurado
-    "navegador": "firefox",  # Uno de los navegadores más usados en Linux, sin embargo, está opción es para no dejar vacío el espacio de configuración
     "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
     "ignorar": [],  # No ignorar paquetes por defecto
     "eula_detector": True,  # Activado por defecto para mejor seguridad legal
@@ -37,7 +36,6 @@ kpa_schema = {
     "properties": {
         "visor": {"type": "string"},
         "proxychains4": {"type": "boolean"},
-        "navegador": {"type": "string"},
         "root": {"type": "string"},
         "ignorar": {"type": "array", "items": {"type": "string"}},
         "eula_detector": {"type": "boolean"},
