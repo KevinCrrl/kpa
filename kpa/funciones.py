@@ -78,11 +78,12 @@ def pkgbuild(paquete, actualizacion=False):
     confirmacion = yellow_input("\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
         pkg = Parser(archivo_pkgbuild)
+        dependencias: list = []
         try:
-            dependencias: list = pkg.get_depends() + pkg.get_makedepends()
+            dependencias += pkg.get_depends()
+            dependencias += pkg.get_makedepends()  # Sumar por separado ya que no todos los paquetes tienen makedepends
         except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
-            red("Error al intentar obtener las dependencias del paquete.")
-            dependencias = []
+            pass
         en_aur: list = verificar_paquetes(dependencias)
         # Limpiar paquetes repetidos
         en_aur_limpio: list = []
