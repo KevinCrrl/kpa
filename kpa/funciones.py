@@ -130,7 +130,6 @@ def instalar(paquete):
 
 
 def actualizar_simple(paquete):
-    green(f"Buscando actualización para {paquete}")
     ruta_paquete = join(RUTA, paquete)
     chdir(ruta_paquete)
     try:
@@ -140,7 +139,7 @@ def actualizar_simple(paquete):
         if antiguo.get_full_package_name() == nuevo.get_full_package_name():
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
-            blue("Actualización encontrada.")
+            blue(f"Actualización encontrada para {paquete}")
             # Eliminar archivos caché
             rmtree("src")
             rmtree("pkg")
