@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpa"
+version = "2.0.0"
+authors = [
+  { name="KevinCrrl" },
+]
+description = "KevinCrrl Python AUR Helper"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+license = {text = "GPL-3.0-or-later"}
+dependencies = [
+    "colorama>=0.4.6",
+    "pyxdg>=0.26",
+    "jsonschema>=4.22.0",
+    "pkgbuild-parser>=0.4.0",
+    "requests>=2.32.4",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/KevinCrrl/kpa"
+"Bug Tracker" = "https://github.com/KevinCrrl/kpa/issues"
+
+
+[project.scripts]
+kpa = "kpa.kpa:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kpa*"]

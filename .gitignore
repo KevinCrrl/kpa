@@ -4,3 +4,4 @@ build/
 kpa_venv
 kpa.spec
 kpa.html
+kpa.egg-info
