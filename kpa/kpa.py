@@ -62,7 +62,7 @@ def main():
     try:
         for arg, funcion in args.items():
             if sys.argv[1] == "-h":
-                print("""Argumentos válidos en KPA versión 2.0.0:
+                print("""Argumentos válidos en KPA versión 2.0.1-beta:
 
     Instalar paquetes:
         -I [PAQUETES]
@@ -71,6 +71,9 @@ def main():
         -A [PAQUETES]
     Actualizar TODOS los paquetes instalados con KPA:
         -A todo
+
+    Desinstalar paquetes:
+        -D [paquetes]
 
     Reinstalar paquetes:
         -R [PAQUETES]

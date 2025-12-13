@@ -10,7 +10,7 @@
 
 ## Pasos para usar en desarrollo
 
-Para escribir código para KPA, primero se debe entender que a partir de la versión 1.7.0 se comporta como un paquete y no como un script simple, por ello se recomienda crear un entorno virtual para usar pip e instalar dependencias sin romper dependencias externas del sistema.
+Para escribir código para KPA, primero se debe entender que a partir de la versión 2.0.0 se comporta como un paquete y no como un script simple, por ello se recomienda crear un entorno virtual para usar pip e instalar dependencias sin romper dependencias externas del sistema.
 
 Una vez dentro del entorno, instale lo necesario con el requirements.txt, por ejemplo, usando pip:
 

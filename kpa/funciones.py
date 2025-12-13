@@ -81,7 +81,9 @@ def pkgbuild(paquete, actualizacion=False):
         dependencias: list = []
         try:
             dependencias += pkg.get_depends()
-            dependencias += pkg.get_makedepends()  # Sumar por separado ya que no todos los paquetes tienen makedepends
+            # Sumar por separado ya que no todos los paquetes tienen makedepends o checkdepends
+            dependencias += pkg.get_makedepends()
+            dependencias += pkg.get_checkdepends()
         except (parser_core.ParserKeyError, parser_core.ParserNoneTypeError):
             pass
         en_aur: list = verificar_paquetes(dependencias)
