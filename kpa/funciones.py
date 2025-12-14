@@ -57,24 +57,25 @@ def eula_detectado(ruta):
 
 
 def pkgbuild(paquete, actualizacion=False):
+    p_ruta = join(RUTA, paquete)
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
         yellow("ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
         pregunta = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
         if pregunta.strip().lower() != "s":
-            rmtree(join(RUTA, paquete))
+            rmtree(p_ruta)
             sys.exit()
-    archivo_pkgbuild = join(RUTA, paquete, "PKGBUILD")
+    archivo_pkgbuild = join(p_ruta, "PKGBUILD")
     if datos["visor"] == "kpa":
         try:
             visor(archivo_pkgbuild)
         except FileNotFoundError:
-            no_aur(join(RUTA, paquete))
+            no_aur(p_ruta)
     else:
         try:
             sb.run([datos["visor"], archivo_pkgbuild], check=True)
         except sb.CalledProcessError:
-            no_aur(join(RUTA, paquete))
+            no_aur(p_ruta)
     confirmacion = yellow_input("\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
     if confirmacion.strip().lower() == "s":
         pkg = Parser(archivo_pkgbuild)
@@ -102,21 +103,21 @@ def pkgbuild(paquete, actualizacion=False):
                 except sb.CalledProcessError:  # Error producido cuando el paquete no está instalado
                     # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
                     instalar(paquete_aur)
-            chdir(join(RUTA, paquete))
+            chdir(p_ruta)
         blue("Creando paquete con makepkg...")
         try:
             if datos["proxychains4"]:
                 sb.run(["proxychains4", "makepkg", "-sf"], check=True)  # Descargar el source usando TOR
             else:
                 sb.run(["makepkg", "-sf"], check=True)
-            sb.run([datos["root"], "pacman", "-U"] + list(Path(join(RUTA, paquete)).glob("*.pkg.tar.zst")), check=True)  # Instala fuera pues si se usa TOR puede fallar la instalación.
+            sb.run([datos["root"], "pacman", "-U"] + encontrar_archivos(p_ruta, ".pkg.tar.zst") + encontrar_archivos(p_ruta, ".pkg.tar.xz"), check=True)  # Instala fuera pues si se usa TOR puede fallar la instalación.
         except sb.CalledProcessError:
             red("ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
         # Correción de bug que eliminaba la carpeta de un paquete como si estuviera instalando cuando a veces es una actualización
         # Esta correción evita que se borre la carpeta en caso de actualización y solo se borre si no se quiere instalar por primera vez
         if not actualizacion:
-            rmtree(join(RUTA, paquete))
+            rmtree(p_ruta)
 
 
 def instalar(paquete):
