@@ -144,11 +144,14 @@ def actualizar_simple(paquete):
         else:
             blue(f"Actualización encontrada para {paquete}")
             # Eliminar archivos caché
-            rmtree("src")
-            rmtree("pkg")
-            comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + encontrar_archivos(ruta_paquete, ".tar.gz") + encontrar_archivos(ruta_paquete, ".tar.xz") + encontrar_archivos(ruta_paquete, ".deb") + encontrar_archivos(ruta_paquete, ".pkg.tar.xz")
-            for comprimido in comprimidos:
-                remove(comprimido)
+            try:
+                rmtree("src")
+                rmtree("pkg")
+                comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + encontrar_archivos(ruta_paquete, ".tar.gz") + encontrar_archivos(ruta_paquete, ".tar.xz") + encontrar_archivos(ruta_paquete, ".deb") + encontrar_archivos(ruta_paquete, ".pkg.tar.xz")
+                for comprimido in comprimidos:
+                    remove(comprimido)
+            except FileNotFoundError:
+                pass
             pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
     except sb.CalledProcessError as e:
         red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
