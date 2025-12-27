@@ -62,7 +62,7 @@ def main():
     try:
         for arg, funcion in args.items():
             if sys.argv[1] == "-h":
-                print("""Argumentos válidos en KPA versión 2.1.0-beta:
+                print("""Argumentos válidos en KPA versión 2.1.0:
 
     Instalar paquetes:
         -I [PAQUETES]
