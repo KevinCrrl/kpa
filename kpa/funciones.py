@@ -22,10 +22,18 @@ from kpa.parser import datos
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import *
 from kpa import git
+from typer import Typer
 import subprocess as sb
 import sys
 
 RUTA = join(xdg_cache_home, "kpa")
+
+cli = Typer(
+    context_settings={
+        "allow_interspersed_args": True,
+        "ignore_unknown_options": True,
+    }
+)
 
 
 def encontrar_archivos(ruta: str, extension: str) -> list:
@@ -49,9 +57,9 @@ def eula_detectado(ruta):
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
             return True
-    license = Parser(join(ruta, "PKGBUILD")).get_license()
+    pkg_license = Parser(join(ruta, "PKGBUILD")).get_license()
     for license_comun in licenses_comunes:
-        if license_comun in license:
+        if license_comun in pkg_license:
             return True
     return False
 
@@ -106,11 +114,7 @@ def pkgbuild(paquete, actualizacion=False):
             chdir(p_ruta)
         blue("Creando paquete con makepkg...")
         try:
-            if datos["proxychains4"]:
-                sb.run(["proxychains4", "makepkg", "-sf"], check=True)  # Descargar el source usando TOR
-            else:
-                sb.run(["makepkg", "-sf"], check=True)
-            sb.run([datos["root"], "pacman", "-U"] + encontrar_archivos(p_ruta, ".pkg.tar.zst") + encontrar_archivos(p_ruta, ".pkg.tar.xz"), check=True)  # Instala fuera pues si se usa TOR puede fallar la instalación.
+            sb.run(["makepkg", "-sfi"], check=True)
         except sb.CalledProcessError:
             red("ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
@@ -120,16 +124,17 @@ def pkgbuild(paquete, actualizacion=False):
             rmtree(p_ruta)
 
 
-def instalar(paquete):
-    chdir(RUTA)
-    blue(f"Clonando repositorio de {paquete}...")
-    try:
-        git.clonar(paquete)
-    except sb.CalledProcessError:
-        red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
-        sys.exit(1)
-    chdir(join(RUTA, paquete))
-    pkgbuild(paquete)  # actualización por defecto queda en False
+@cli.command(name="-I", help="Instalar paquetes.")
+def instalar(paquetes: list[str]):
+    for paquete in paquetes:
+        chdir(RUTA)
+        blue(f"Clonando repositorio de {paquete}...")
+        try:
+            git.clonar(paquete)
+            chdir(join(RUTA, paquete))
+            pkgbuild(paquete)  # actualización por defecto queda en False
+        except sb.CalledProcessError:
+            red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
 
 
 def actualizar_simple(paquete):
@@ -170,72 +175,80 @@ def actualizar_uno(paquete):
         red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
 
-def actualizar_arg(paquete):
-    if paquete == "todo":
-        for directorio in listdir(RUTA):
-            if directorio == "act" or directorio in datos["ignorar"]:
-                continue
-            actualizar_uno(directorio)
-    else:
-        actualizar_uno(paquete)
+@cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes")
+def actualizar_arg(paquetes: list[str]):
+    for paquete in paquetes:
+        if paquete == "todo":
+            for directorio in listdir(RUTA):
+                if directorio == "act" or directorio in datos["ignorar"]:
+                    continue
+                actualizar_uno(directorio)
+        else:
+            actualizar_uno(paquete)
 
 
-def desinstalar(paquete):
-    yellow(f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
-    confirmacion = input("¿Desea continuar? (S/N): ")
-    if confirmacion.strip().lower() == "s":
-        try:
-            rmtree(join(RUTA, paquete))
-            sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
-        except FileNotFoundError:
-            red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
-        except sb.CalledProcessError:
-            red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
-
-
-def reinstalar(paquete):
-    pdir = join(RUTA, paquete)
-    if exists(pdir):
-        for archivo in listdir(pdir):
-            if archivo.endswith(".pkg.tar.zst"):
-                completa = join(pdir, archivo)
-                remove(completa)
-        chdir(pdir)
-        pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
-    else:
-        red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
-
-
-def limpiar(tipo):
-    if tipo == "debug":
-        try:
-            instalados = sb.check_output(["pacman", "-Qm"], text=True)
-        except sb.CalledProcessError:
-            red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
-            sys.exit(1)
-          # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
-        for paquete in instalados.strip().split("\n"):
-            if paquete.split()[0].endswith("-debug"):
-                print(f"\nSe encontró el debug: {paquete}")
-                eliminar = input("¿Desea eliminarlo del sistema? (S/N): ")
-                if eliminar.strip().lower() == "s":
-                    try:
-                        sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
-                    except sb.CalledProcessError:
-                        red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
-    elif tipo == "huerfanos":
-        try:
-            huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()
-        except sb.CalledProcessError as e:
-            yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
-            sys.exit(1)
-        print("Se encontraron los siguientes paquetes huérfanos:\n")
-        print(huerfanos)
-        eliminar = input("\n¿Desea eliminar los huérfanos del sistema? (S/N): ")
-        if eliminar.strip().lower() == "s":
+@cli.command(name="-D", help="Desinstalar paquetes")
+def desinstalar(paquetes: list[str]):
+    for paquete in paquetes:
+        yellow(f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
+        confirmacion = input("¿Desea continuar? (S/N): ")
+        if confirmacion.strip().lower() == "s":
             try:
-                sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
+                rmtree(join(RUTA, paquete))
+                sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
+            except FileNotFoundError:
+                red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
+            except sb.CalledProcessError:
+                red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
+
+
+@cli.command("-R", help="Reinstalar paquetes.")
+def reinstalar(paquetes: list[str]):
+    for paquete in paquetes:
+        pdir = join(RUTA, paquete)
+        if exists(pdir):
+            for archivo in listdir(pdir):
+                if archivo.endswith(".pkg.tar.zst"):
+                    completa = join(pdir, archivo)
+                    remove(completa)
+            chdir(pdir)
+            pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
+        else:
+            red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+
+
+@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug' o paquetes huérfanos con la opción 'huerfanos'")
+def limpiar(opciones: list[str]):
+    for tipo in opciones:
+        if tipo == "debug":
+            try:
+                instalados = sb.check_output(["pacman", "-Qm"], text=True)
+            except sb.CalledProcessError:
+                red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
+                sys.exit(1)
+            # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
+            for paquete in instalados.strip().split("\n"):
+                if paquete.split()[0].endswith("-debug"):
+                    print(f"\nSe encontró el debug: {paquete}")
+                    eliminar = input("¿Desea eliminarlo del sistema? (S/N): ")
+                    if eliminar.strip().lower() == "s":
+                        try:
+                            sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
+                        except sb.CalledProcessError:
+                            red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
+        elif tipo == "huerfanos":
+            try:
+                huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()
             except sb.CalledProcessError as e:
-                red(f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
-    else:
-        yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")
+                yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
+                sys.exit(1)
+            print("Se encontraron los siguientes paquetes huérfanos:\n")
+            print(huerfanos)
+            eliminar = input("\n¿Desea eliminar los huérfanos del sistema? (S/N): ")
+            if eliminar.strip().lower() == "s":
+                try:
+                    sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
+                except sb.CalledProcessError as e:
+                    red(f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
+        else:
+            yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")

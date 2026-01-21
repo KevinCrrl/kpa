@@ -15,15 +15,9 @@ def clonar(paquete):
     else:
         url_repo = f"{datos['url']}/{paquete}.git"
 
-    if datos["proxychains4"]:
-        git_run(["proxychains4", "git", "clone"] + url_repo.split())
-    else:
-        git_run(["git", "clone"] + url_repo.split())
+    git_run(["git", "clone"] + url_repo.split())
 
 
 def pull():
-    if datos["proxychains4"]:
-        git_run(["proxychains4", "git", "fetch", "origin"])
-    else:
-        git_run(["git", "fetch", "origin"])
+    git_run(["git", "fetch", "origin"])
     git_run(["git", "reset", "--hard", "origin/master"])

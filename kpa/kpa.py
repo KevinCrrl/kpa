@@ -14,13 +14,6 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from kpa.funciones import (
-    instalar,
-    actualizar_arg,
-    desinstalar,
-    reinstalar,
-    limpiar
-)
 from os.path import (
     exists,
     join
@@ -30,16 +23,9 @@ from os import (
     makedirs
 )
 from kpa.colorprints import *
+from kpa.funciones import cli
 from xdg.BaseDirectory import xdg_cache_home
 import sys
-
-args = {
-    "-I": instalar,
-    "-A": actualizar_arg,
-    "-D": desinstalar,
-    "-R": reinstalar,
-    "-L": limpiar,
-}
 
 if geteuid() == 0:
     yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
@@ -50,55 +36,18 @@ if geteuid() == 0:
 
 RUTA = join(xdg_cache_home, "kpa")
 
-if exists(RUTA):
-    green("Ruta de KPA encontrada...\n")
-
-else:
+if not exists(RUTA):
     print("Creando ruta para KPA...\n")
     makedirs(RUTA, exist_ok=True)
 
 
+@cli.command(name="version", help="Mostrar la versión instalada de KPA.")
+def version():
+    print("KPA Versión 2.2.0")
+
+
 def main():
     try:
-        for arg, funcion in args.items():
-            if sys.argv[1] == "-h":
-                print("""Argumentos válidos en KPA versión 2.1.0:
-
-    Instalar paquetes:
-        -I [PAQUETES]
-
-    Actualizar paquetes:
-        -A [PAQUETES]
-    Actualizar TODOS los paquetes instalados con KPA:
-        -A todo
-
-    Desinstalar paquetes:
-        -D [paquetes]
-
-    Reinstalar paquetes:
-        -R [PAQUETES]
-
-    Limpiar paquetes huérfanos y/o paquetes que sean de tipo '-debug':
-        -L huerfanos
-        -L debug
-
-    Limpiar tanto huérfanos como debug:
-        -L huerfanos debug
-
-    Ver esta ayuda: -h
-
-Recuerde crear el archivo kpa.json para configurar kpa correctamente,
-vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un
-ejemplo de como debería ser el archivo.""")
-                break
-            if sys.argv[1] == arg:
-                for paquete in sys.argv[2:]:
-                    funcion(paquete)
-                break
-
-        else:
-            red("ERROR: No se encontró el argumento ingresado. Use -h para obtener los comandos disponibles.")
-    except IndexError:
-        red("ERROR: Ingresó una cantidad incorrecta de argumentos.")
+        cli()
     except KeyboardInterrupt:
         yellow("\nSaliendo del programa por interrupción de teclado.")
