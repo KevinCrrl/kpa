@@ -175,7 +175,7 @@ def actualizar_uno(paquete):
         red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
 
-@cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes")
+@cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
 def actualizar_arg(paquetes: list[str]):
     for paquete in paquetes:
         if paquete == "todo":
@@ -187,7 +187,7 @@ def actualizar_arg(paquetes: list[str]):
             actualizar_uno(paquete)
 
 
-@cli.command(name="-D", help="Desinstalar paquetes")
+@cli.command(name="-D", help="Desinstalar paquetes.")
 def desinstalar(paquetes: list[str]):
     for paquete in paquetes:
         yellow(f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
@@ -217,7 +217,7 @@ def reinstalar(paquetes: list[str]):
             red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
 
 
-@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug' o paquetes huérfanos con la opción 'huerfanos'")
+@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug' o paquetes huérfanos con la opción 'huerfanos'.")
 def limpiar(opciones: list[str]):
     for tipo in opciones:
         if tipo == "debug":
