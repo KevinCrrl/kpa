@@ -28,12 +28,12 @@ import sys
 
 RUTA = join(xdg_cache_home, "kpa")
 
-cli = Typer(
-    context_settings={
-        "allow_interspersed_args": True,
-        "ignore_unknown_options": True,
-    }
-)
+cli = Typer(context_settings={"ignore_unknown_options": True,})
+
+
+@cli.command(name="version", help="Mostrar la versión instalada de KPA.")
+def version():
+    print("KPA Versión 2.2.0")
 
 
 def encontrar_archivos(ruta: str, extension: str) -> list:

@@ -41,11 +41,6 @@ if not exists(RUTA):
     makedirs(RUTA, exist_ok=True)
 
 
-@cli.command(name="version", help="Mostrar la versión instalada de KPA.")
-def version():
-    print("KPA Versión 2.2.0")
-
-
 def main():
     try:
         cli()
