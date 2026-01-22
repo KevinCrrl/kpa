@@ -5,19 +5,19 @@ import subprocess as sb
 from kpa.parser import datos
 
 
-def git_run(comando: list):
-    sb.run(comando, check=True, capture_output=True)
+def git_run(comando: list, verbose):
+    sb.run(comando, check=True, capture_output=not verbose)
 
 
-def clonar(paquete):
+def clone(paquete, verbose=False):
     if datos["clone_branch"]:
         url_repo = f"--branch {paquete} --single-branch {datos['url']} {paquete}"
     else:
         url_repo = f"{datos['url']}/{paquete}.git"
 
-    git_run(["git", "clone"] + url_repo.split())
+    git_run(["git", "clone"] + url_repo.split(), verbose)
 
 
-def pull():
-    git_run(["git", "fetch", "origin"])
-    git_run(["git", "reset", "--hard", "origin/master"])
+def pull(verbose=False):
+    git_run(["git", "fetch", "origin"], verbose)
+    git_run(["git", "reset", "--hard", "origin/master"], verbose)

@@ -125,24 +125,24 @@ def pkgbuild(paquete, actualizacion=False):
 
 
 @cli.command(name="-I", help="Instalar paquetes.")
-def instalar(paquetes: list[str]):
+def instalar(paquetes: list[str], verbose: bool=False):
     for paquete in paquetes:
         chdir(RUTA)
         blue(f"Clonando repositorio de {paquete}...")
         try:
-            git.clonar(paquete)
+            git.clone(paquete, verbose)
             chdir(join(RUTA, paquete))
             pkgbuild(paquete)  # actualización por defecto queda en False
         except sb.CalledProcessError:
             red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
 
 
-def actualizar_simple(paquete):
+def actualizar_simple(paquete, verbose):
     ruta_paquete = join(RUTA, paquete)
     chdir(ruta_paquete)
     try:
         antiguo = Parser("PKGBUILD")
-        git.pull()
+        git.pull(verbose)
         nuevo = Parser("PKGBUILD")
         if antiguo.get_full_package_name() == nuevo.get_full_package_name():
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
@@ -162,29 +162,29 @@ def actualizar_simple(paquete):
         red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
 
 
-def actualizar_uno(paquete):
+def actualizar_uno(paquete, verbose):
     if exists(join(RUTA, paquete)):
         if paquete in datos["ignorar"]:
             yellow("ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
             forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
             if forzar.strip().lower() == "s":
-                actualizar_simple(paquete)
+                actualizar_simple(paquete, verbose)
         else:
-            actualizar_simple(paquete)
+            actualizar_simple(paquete, verbose)
     else:
         red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
 
 @cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
-def actualizar_arg(paquetes: list[str]):
+def actualizar_arg(paquetes: list[str], verbose: bool=False):
     for paquete in paquetes:
         if paquete == "todo":
             for directorio in listdir(RUTA):
                 if directorio == "act" or directorio in datos["ignorar"]:
                     continue
-                actualizar_uno(directorio)
+                actualizar_uno(directorio, verbose)
         else:
-            actualizar_uno(paquete)
+            actualizar_uno(paquete, verbose)
 
 
 @cli.command(name="-D", help="Desinstalar paquetes.")
