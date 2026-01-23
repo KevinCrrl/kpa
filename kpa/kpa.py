@@ -41,6 +41,13 @@ if not exists(RUTA):
     makedirs(RUTA, exist_ok=True)
 
 
+@cli.callback()
+def json_help():
+    """Recuerde crear el archivo kpa.json para configurar kpa correctamente,
+vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un
+ejemplo de como debería ser el archivo."""
+
+
 def main():
     try:
         cli()
