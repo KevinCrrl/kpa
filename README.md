@@ -27,7 +27,7 @@ con eso puede instalar KPA en su entorno en modo editable (que es lo recomendado
 Una vez instalado se puede probar si funciona con:
 
 ```
-(entorno) $ kpa -h
+(entorno) $ kpa --help
 ```
 
 Ahora con KPA instalado en modo editable cada cambio realizado en el código se podrá reflejar en el uso de la cli sin necesidad de reejecutar pip.
