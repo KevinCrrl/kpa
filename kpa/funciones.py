@@ -33,7 +33,7 @@ cli = Typer(context_settings={"ignore_unknown_options": True,})
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 2.2.0")
+    print("KPA Versión 2.2.1")
 
 
 def encontrar_archivos(ruta: str, extension: str) -> list:
@@ -110,7 +110,7 @@ def pkgbuild(paquete, actualizacion=False):
                     sb.run(["pacman", "-Qi", paquete_aur], check=True, capture_output=True)
                 except sb.CalledProcessError:  # Error producido cuando el paquete no está instalado
                     # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
-                    instalar(paquete_aur)
+                    instalar(paquete_aur.split())
             chdir(p_ruta)
         blue("Creando paquete con makepkg...")
         try:
