@@ -1,26 +1,29 @@
 # Copyright (C) 2025 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from colorama import init, Fore
-
-init(autoreset=True)
+from typer import secho, colors
 
 
-def red(texto):
-    print(Fore.RED + texto)
+def basic_print(text, color=colors.WHITE):
+    secho(text, fg=color)
 
 
-def yellow(texto):
-    print(Fore.YELLOW + texto)
+def red(text):
+    basic_print(text, colors.RED)
 
 
-def blue(texto):
-    print(Fore.BLUE + texto)
+def yellow(text):
+    basic_print(text, colors.YELLOW)
 
 
-def green(texto):
-    print(Fore.GREEN + texto)
+def blue(text):
+    basic_print(text, colors.BLUE)
 
 
-def yellow_input(texto):
-    return input(Fore.YELLOW + texto)
+def green(text):
+    basic_print(text, colors.GREEN)
+
+
+def yellow_input(text):
+    secho(text, fg=colors.YELLOW)
+    return input()
