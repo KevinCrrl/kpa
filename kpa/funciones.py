@@ -1,7 +1,11 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from kpa.colorprints import yellow_input
+from kpa.parser import datos
+from kpa.aurapi import verificar_paquetes
+from kpa.colorprints import *
+from kpa.extra_utils import *
+from kpa import git
 from xdg.BaseDirectory import xdg_cache_home
 from pkgbuild_parser import (
     Parser,
@@ -16,12 +20,7 @@ from os import (
     chdir,
     remove,
 )
-from pathlib import Path
 from shutil import rmtree
-from kpa.parser import datos
-from kpa.aurapi import verificar_paquetes
-from kpa.colorprints import *
-from kpa import git
 from typer import Typer
 import subprocess as sb
 import sys
@@ -36,41 +35,15 @@ def version():
     print("KPA Versión 2.2.1")
 
 
-def encontrar_archivos(ruta: str, extension: str) -> list:
-    return list(Path(ruta).glob(f"*{extension}"))
-
-
-def visor(ruta_archivo):
-    with open(ruta_archivo, "r", encoding="utf-8") as archivo:
-        print(archivo.read())
-
-
-def no_aur(ruta):
-    red("ERROR: Intentaste clonar un repositorio no existente del AUR.")
-    rmtree(ruta)
-    sys.exit(1)
-
-
-def eula_detectado(ruta):
-    nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula", "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
-    licenses_comunes = ["Proprietary", "proprietary", "Custom", "custom"]
-    for archivo in listdir(ruta):
-        if archivo in nombres_comunes:
-            return True
-    pkg_license = Parser(join(ruta, "PKGBUILD")).get_license()
-    for license_comun in licenses_comunes:
-        if license_comun in pkg_license:
-            return True
-    return False
-
-
 def pkgbuild(paquete, actualizacion=False):
     p_ruta = join(RUTA, paquete)
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
-        yellow("ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.")
-        pregunta = input("¿Desea continuar con la instalación de un paquete con EULA? (S/N): ")
-        if pregunta.strip().lower() != "s":
+        value = confirm(
+            "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.",
+            "¿Desea continuar con la instalación de un paquete con EULA?",
+        )
+        if not value:
             rmtree(p_ruta)
             sys.exit()
     archivo_pkgbuild = join(p_ruta, "PKGBUILD")
@@ -84,8 +57,8 @@ def pkgbuild(paquete, actualizacion=False):
             sb.run([datos["visor"], archivo_pkgbuild], check=True)
         except sb.CalledProcessError:
             no_aur(p_ruta)
-    confirmacion = yellow_input("\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción? (S,N): ")
-    if confirmacion.strip().lower() == "s":
+    value = confirm("", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?")
+    if value:
         pkg = Parser(archivo_pkgbuild)
         dependencias: list = []
         try:
@@ -152,7 +125,11 @@ def actualizar_simple(paquete, verbose):
             try:
                 rmtree("src")
                 rmtree("pkg")
-                comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + encontrar_archivos(ruta_paquete, ".tar.gz") + encontrar_archivos(ruta_paquete, ".tar.xz") + encontrar_archivos(ruta_paquete, ".deb") + encontrar_archivos(ruta_paquete, ".pkg.tar.xz")
+                comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + \
+                                            encontrar_archivos(ruta_paquete, ".tar.gz") + \
+                                            encontrar_archivos(ruta_paquete, ".tar.xz") + \
+                                            encontrar_archivos(ruta_paquete, ".deb") + \
+                                            encontrar_archivos(ruta_paquete, ".pkg.tar.xz")
                 for comprimido in comprimidos:
                     remove(comprimido)
             except FileNotFoundError:
@@ -165,9 +142,11 @@ def actualizar_simple(paquete, verbose):
 def actualizar_uno(paquete, verbose):
     if exists(join(RUTA, paquete)):
         if paquete in datos["ignorar"]:
-            yellow("ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.")
-            forzar = input("¿Desea actualizar a pesar de que el paquete esté en la lista? (S/N): ")
-            if forzar.strip().lower() == "s":
+            value = confirm(
+                "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.",
+                "¿Desea actualizar a pesar de que el paquete esté en la lista?"
+            )
+            if value:
                 actualizar_simple(paquete, verbose)
         else:
             actualizar_simple(paquete, verbose)
@@ -190,9 +169,11 @@ def actualizar_arg(paquetes: list[str], verbose: bool=False):
 @cli.command(name="-D", help="Desinstalar paquetes.")
 def desinstalar(paquetes: list[str]):
     for paquete in paquetes:
-        yellow(f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa")
-        confirmacion = input("¿Desea continuar? (S/N): ")
-        if confirmacion.strip().lower() == "s":
+        value = confirm(
+            f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa",
+            "¿Desea continuar?"
+        )
+        if value:
             try:
                 rmtree(join(RUTA, paquete))
                 sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
@@ -222,16 +203,15 @@ def limpiar(opciones: list[str]):
     for tipo in opciones:
         if tipo == "debug":
             try:
-                instalados = sb.check_output(["pacman", "-Qm"], text=True)
+                instalados = sb.check_output(["pacman", "-Qmq"], text=True)
             except sb.CalledProcessError:
-                red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qm'")
+                red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qmq'")
                 sys.exit(1)
             # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
             for paquete in instalados.strip().split("\n"):
-                if paquete.split()[0].endswith("-debug"):
-                    print(f"\nSe encontró el debug: {paquete}")
-                    eliminar = input("¿Desea eliminarlo del sistema? (S/N): ")
-                    if eliminar.strip().lower() == "s":
+                if paquete.endswith("-debug"):
+                    value = confirm (f"\nSe encontró el debug: {paquete}", "¿Desea eliminarlo del sistema?")
+                    if value:
                         try:
                             sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
                         except sb.CalledProcessError:
@@ -242,10 +222,11 @@ def limpiar(opciones: list[str]):
             except sb.CalledProcessError as e:
                 yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
                 sys.exit(1)
-            print("Se encontraron los siguientes paquetes huérfanos:\n")
-            print(huerfanos)
-            eliminar = input("\n¿Desea eliminar los huérfanos del sistema? (S/N): ")
-            if eliminar.strip().lower() == "s":
+            value = confirm(
+                "Se encontraron los siguientes paquetes huérfanos:\n\n" + huerfanos,
+                "\n¿Desea eliminar los huérfanos del sistema?"
+            )
+            if value:
                 try:
                     sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
                 except sb.CalledProcessError as e:
