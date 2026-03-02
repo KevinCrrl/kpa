@@ -1,4 +1,4 @@
-# Copyright (C) 2025 KevinCrrl
+# Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
 from xdg.BaseDirectory import xdg_config_home

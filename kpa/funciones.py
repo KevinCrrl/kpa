@@ -1,4 +1,4 @@
-# Copyright (C) 2025 KevinCrrl
+# Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
 from kpa.colorprints import yellow_input

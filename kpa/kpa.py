@@ -1,5 +1,5 @@
 """
-    Copyright (C) 2025 KevinCrrl
+    Copyright (C) 2025-2026 KevinCrrl
 
     Este programa es software libre: puedes redistribuirlo y/o modificarlo
     está bajo los términos de la Licencia Pública General GNU publicada por
