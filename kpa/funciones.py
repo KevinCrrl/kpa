@@ -217,4 +217,4 @@ def limpiar(opciones: list[str]):
                 clean_cache(ppath)
             green("La caché de KPA ha sido eliminada!")
         else:
-            yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")
+            yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug', 'huerfanos' o 'cache'")
