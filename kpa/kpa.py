@@ -22,7 +22,7 @@ from os import (
     geteuid,
     makedirs
 )
-from kpa.colorprints import *
+from kpa.colorprints import yellow
 from kpa.funciones import cli
 from xdg.BaseDirectory import xdg_cache_home
 import sys

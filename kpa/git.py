@@ -20,4 +20,4 @@ def clone(paquete, verbose=False):
 
 def pull(verbose=False):
     git_run(["git", "fetch", "origin"], verbose)
-    git_run(["git", "reset", "--hard", "origin/master"], verbose)
+    git_run(["git", "reset", "--hard", "origin"], verbose)
