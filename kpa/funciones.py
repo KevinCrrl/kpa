@@ -1,26 +1,15 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from kpa.extra_utils import clean_cache
+from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur
 from kpa.parser import datos
 from kpa.aurapi import verificar_paquetes
-from kpa.colorprints import *
-from kpa.extra_utils import *
+from kpa.colorprints import blue, yellow, red, green
 from kpa import git
 from xdg.BaseDirectory import xdg_cache_home
-from pkgbuild_parser import (
-    Parser,
-    parser_core
-)
-from os.path import (
-    exists,
-    join
-)
-from os import (
-    listdir,
-    chdir,
-    remove,
-)
+from pkgbuild_parser import Parser, parser_core
+from os.path import exists, join
+from os import listdir, chdir, remove
 from shutil import rmtree
 from typer import Typer
 import subprocess as sb

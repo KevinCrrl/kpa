@@ -14,14 +14,8 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from os.path import (
-    exists,
-    join
-)
-from os import (
-    geteuid,
-    makedirs
-)
+from os.path import exists, join
+from os import geteuid, makedirs
 from kpa.colorprints import yellow
 from kpa.funciones import cli
 from xdg.BaseDirectory import xdg_cache_home
