@@ -6,7 +6,7 @@ from pathlib import Path
 from pkgbuild_parser import Parser
 from shutil import rmtree
 from os.path import join
-from os import listdir
+from os import listdir, remove
 import sys
 
 
@@ -53,3 +53,18 @@ def eula_detectado(ruta: str):
             if license_comun in pkg_license:
                 return True
     return False
+
+
+def clean_cache(path):
+    try:
+        rmtree("src")
+        rmtree("pkg")
+        comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
+                                    encontrar_archivos(path, ".tar.gz") + \
+                                    encontrar_archivos(path, ".tar.xz") + \
+                                    encontrar_archivos(path, ".deb") + \
+                                    encontrar_archivos(path, ".pkg.tar.xz")
+        for comprimido in comprimidos:
+            remove(comprimido)
+    except FileNotFoundError:
+        pass

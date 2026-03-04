@@ -1,6 +1,7 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
+from kpa.extra_utils import clean_cache
 from kpa.parser import datos
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import *
@@ -121,19 +122,7 @@ def actualizar_simple(paquete, verbose):
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
             blue(f"Actualización encontrada para {paquete}")
-            # Eliminar archivos caché
-            try:
-                rmtree("src")
-                rmtree("pkg")
-                comprimidos = encontrar_archivos(ruta_paquete, ".pkg.tar.zst") + \
-                                            encontrar_archivos(ruta_paquete, ".tar.gz") + \
-                                            encontrar_archivos(ruta_paquete, ".tar.xz") + \
-                                            encontrar_archivos(ruta_paquete, ".deb") + \
-                                            encontrar_archivos(ruta_paquete, ".pkg.tar.xz")
-                for comprimido in comprimidos:
-                    remove(comprimido)
-            except FileNotFoundError:
-                pass
+            clean_cache(ruta_paquete)
             pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
     except sb.CalledProcessError as e:
         red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
@@ -198,7 +187,7 @@ def reinstalar(paquetes: list[str]):
             red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
 
 
-@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug' o paquetes huérfanos con la opción 'huerfanos'.")
+@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug', paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
 def limpiar(opciones: list[str]):
     for tipo in opciones:
         if tipo == "debug":
@@ -231,5 +220,12 @@ def limpiar(opciones: list[str]):
                     sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
                 except sb.CalledProcessError as e:
                     red(f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
+        elif tipo == "cache":
+            blue("Limpiando caché de KPA...")
+            for paquete in listdir(RUTA):
+                ppath = join(RUTA, paquete)
+                chdir(ppath)
+                clean_cache(ppath)
+            green("La caché de KPA ha sido eliminada!")
         else:
             yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug' o 'huerfanos'")
