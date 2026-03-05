@@ -2,7 +2,7 @@
 
 ## PKGBUILD disponible en el AUR
 
-[Versión estable en AUR](https://aur.archlinux.org/packages/kpa-bin)
+[Versión estable en AUR](https://aur.archlinux.org/packages/kpa)
 
 ### Documentación para la versión más reciente y estable
 
