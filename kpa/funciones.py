@@ -2,17 +2,19 @@
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
 from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur
-from kpa.parser import datos
+from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import blue, yellow, red, green
 from kpa import git
-from xdg.BaseDirectory import xdg_cache_home
+from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
 from pkgbuild_parser import Parser, parser_core
 from os.path import exists, join
 from os import listdir, chdir, remove
 from shutil import rmtree
 from typer import Typer
 import subprocess as sb
+import jsonschema
+import json
 import sys
 
 RUTA = join(xdg_cache_home, "kpa")
@@ -218,3 +220,39 @@ def limpiar(opciones: list[str]):
             green("La caché de KPA ha sido eliminada!")
         else:
             yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug', 'huerfanos' o 'cache'")
+
+@cli.command(name="-C", help="Cambiar la configuración en el archivo kpa.json")
+def conf(to_set:str):
+    to_set_list = to_set.split("=")
+    bools = {
+        "True": True,
+        "False": False,
+        "true": True,
+        "false": False
+    }
+    if to_set_list[0] not in datos:
+        yellow("El valor que intentas configurar no es un valor válido para KPA.")
+        sys.exit(1)
+    try:
+        if to_set_list[0] in ["eula_detector", "clone_branch"]:
+            if to_set_list[1] not in bools:
+                yellow(f"{to_set_list[0]} solo admite booleanos, use 'True', 'true' o 'False', 'false'")
+                sys.exit(1)
+            to_set_list[1] = bools[to_set_list[1]]
+        elif to_set_list[0] == "ignorar":
+            if "[" in to_set_list[1] or "]" in to_set_list[1]:
+                yellow("El valor de 'ignorar' no puede incluir corchetes, debe ser 'ignorar=\"paquete paquete2\"'")
+                sys.exit(1)
+            to_set_list[1] = to_set_list[1].split()
+        datos[to_set_list[0]] = to_set_list[1]
+
+        # Validar antes de aplicar
+        jsonschema.validate(datos, kpa_schema)
+
+        # Escribir despues de todas las validaciones
+        with open(join(xdg_config_home, "kpa", "kpa.json"), "w", encoding="utf-8") as cf:
+            json.dump(datos, cf, indent=4, ensure_ascii=False)
+    except IndexError:
+        red("ERROR: El valor que intentaste configurar no tiene el estilo 'llave=valor'")
+    except jsonschema.exceptions.ValidationError as e:
+        red(f"Error: Falló la validación de la configuración: {e}")
