@@ -17,7 +17,7 @@ import jsonschema
 import json
 import sys
 
-RUTA = join(xdg_cache_home, "kpa")
+RUTA: str = join(xdg_cache_home, "kpa")
 
 cli = Typer(context_settings={"ignore_unknown_options": True,})
 
@@ -27,7 +27,7 @@ def version():
     print("KPA Versión 2.2.1")
 
 
-def pkgbuild(paquete, actualizacion=False):
+def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
     p_ruta = join(RUTA, paquete)
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
@@ -39,16 +39,14 @@ def pkgbuild(paquete, actualizacion=False):
             rmtree(p_ruta)
             sys.exit()
     archivo_pkgbuild = join(p_ruta, "PKGBUILD")
-    if datos["visor"] == "kpa":
-        try:
+    user_visor = datos["visor"].split()
+    try:
+        if user_visor[0] == "kpa":
             visor(archivo_pkgbuild)
-        except FileNotFoundError:
-            no_aur(p_ruta)
-    else:
-        try:
-            sb.run([datos["visor"], archivo_pkgbuild], check=True)
-        except sb.CalledProcessError:
-            no_aur(p_ruta)
+        else:
+            sb.run(user_visor + [archivo_pkgbuild], check=True)
+    except (FileNotFoundError, sb.CalledProcessError):
+        no_aur(p_ruta)
     value = confirm("", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?")
     if value:
         pkg = Parser(archivo_pkgbuild)
@@ -60,6 +58,8 @@ def pkgbuild(paquete, actualizacion=False):
             dependencias += pkg.get_checkdepends()
         except parser_core.ParserKeyError:
             pass
+        if verbose:
+            blue(f"Dependencias parseadas sin procesar por KPA: {dependencias}\n")
         en_aur: list = verificar_paquetes(dependencias)
         # Limpiar paquetes repetidos
         en_aur_limpio: list = []
@@ -97,7 +97,7 @@ def instalar(paquetes: list[str], verbose: bool=False):
         try:
             git.clone(paquete, verbose)
             chdir(join(RUTA, paquete))
-            pkgbuild(paquete)  # actualización por defecto queda en False
+            pkgbuild(paquete, verbose=verbose)  # actualización por defecto queda en False
         except sb.CalledProcessError:
             red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
 
@@ -109,12 +109,16 @@ def actualizar_simple(paquete, verbose):
         antiguo = Parser("PKGBUILD")
         git.pull(verbose)
         nuevo = Parser("PKGBUILD")
-        if antiguo.get_full_package_name() == nuevo.get_full_package_name():
+        a_name = antiguo.get_full_package_name()
+        n_name = nuevo.get_full_package_name()
+        if verbose:
+            blue(f"Versión antes del pull: {a_name} y versión despues del pull: {n_name}")
+        if a_name == n_name:
             yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
             blue(f"Actualización encontrada para {paquete}")
             clean_cache(ruta_paquete)
-            pkgbuild(paquete, True)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+            pkgbuild(paquete, True, verbose)  # Se cambia el estado de actualización a True para que no elimine la carpeta
     except sb.CalledProcessError as e:
         red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
 

@@ -14,7 +14,7 @@ def confirm(text: str, question: str) -> bool:
     correct_input: bool = False
     yellow(text)
     while not correct_input:
-        answer = yellow_input(f"{question} (S/N)")
+        answer = yellow_input(f"{question} (S/N):")
         answer_fix = answer.strip().lower()
         if answer_fix in ('s', 'n'):
             correct_input = True
@@ -42,7 +42,8 @@ def no_aur(ruta):
 
 
 def eula_detectado(ruta: str):
-    nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula", "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
+    nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula",
+                        "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
     licenses_comunes = ["Proprietary", "proprietary", "Custom", "custom"]
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
