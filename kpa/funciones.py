@@ -24,7 +24,7 @@ cli = Typer(context_settings={"ignore_unknown_options": True,})
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 2.2.1")
+    print("KPA Versión 2.3.0")
 
 
 def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
