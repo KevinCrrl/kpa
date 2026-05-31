@@ -14,7 +14,8 @@ datos_kpa = {
     "ignorar": [],  # No ignorar paquetes por defecto
     "eula_detector": True,  # Activado por defecto para mejor seguridad legal
     "url": "https://aur.archlinux.org",  # URL típica del AUR
-    "clone_branch": False  # Clonar directamente el repositorio, sin usar ramas como en algunos mirrors del AUR.
+    # Clonar directamente el repositorio, sin usar ramas como en algunos mirrors del AUR.
+    "clone_branch": False
 }
 
 # Crear copia
@@ -46,7 +47,8 @@ kpa_schema = {
 try:
     jsonschema.validate(datos_usuario, kpa_schema)
 except jsonschema.exceptions.ValidationError as e:
-    red(f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
+    red(
+        f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
     sys.exit(1)
 
 datos = {}  # Config definitiva que se irá completando

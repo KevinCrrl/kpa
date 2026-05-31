@@ -20,7 +20,7 @@ def confirm(text: str, question: str) -> bool:
             correct_input = True
         else:
             yellow("Opción incorrecta, intente de nuevo...")
-    
+
     if answer_fix == "s":
         return True
     return False
@@ -43,7 +43,7 @@ def no_aur(ruta):
 
 def eula_detectado(ruta: str):
     nombres_comunes = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula",
-                        "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
+                       "license.html", "LICENSE.html", "eula_text.html", "EULA_TEXT.html"]
     licenses_comunes = ["Proprietary", "proprietary", "Custom", "custom"]
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
@@ -61,10 +61,10 @@ def clean_cache(path):
         rmtree("src")
         rmtree("pkg")
         comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
-                                    encontrar_archivos(path, ".tar.gz") + \
-                                    encontrar_archivos(path, ".tar.xz") + \
-                                    encontrar_archivos(path, ".deb") + \
-                                    encontrar_archivos(path, ".pkg.tar.xz")
+            encontrar_archivos(path, ".tar.gz") + \
+            encontrar_archivos(path, ".tar.xz") + \
+            encontrar_archivos(path, ".deb") + \
+            encontrar_archivos(path, ".pkg.tar.xz")
         for comprimido in comprimidos:
             remove(comprimido)
     except FileNotFoundError:

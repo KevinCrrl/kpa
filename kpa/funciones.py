@@ -19,7 +19,7 @@ import sys
 
 RUTA: str = join(xdg_cache_home, "kpa")
 
-cli = Typer(context_settings={"ignore_unknown_options": True,})
+cli = Typer(context_settings={"ignore_unknown_options": True, })
 
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
@@ -27,7 +27,7 @@ def version():
     print("KPA Versión 2.3.0")
 
 
-def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
+def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
     p_ruta = join(RUTA, paquete)
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
@@ -47,7 +47,8 @@ def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
             sb.run(user_visor + [archivo_pkgbuild], check=True)
     except (FileNotFoundError, sb.CalledProcessError):
         no_aur(p_ruta)
-    value = confirm("", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?")
+    value = confirm(
+        "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?")
     if value:
         pkg = Parser(archivo_pkgbuild)
         dependencias: list = []
@@ -59,7 +60,8 @@ def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
         except parser_core.ParserKeyError:
             pass
         if verbose:
-            blue(f"Dependencias parseadas sin procesar por KPA: {dependencias}\n")
+            blue(
+                f"Dependencias parseadas sin procesar por KPA: {dependencias}\n")
         en_aur: list = verificar_paquetes(dependencias)
         # Limpiar paquetes repetidos
         en_aur_limpio: list = []
@@ -67,12 +69,15 @@ def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
             if paquete_en_aur not in en_aur_limpio:
                 en_aur_limpio.append(paquete_en_aur)
         if len(en_aur_limpio) != 0:
-            yellow(f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
-            print("Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
+            yellow(
+                f"Las siguientes dependencias de este paquete están en el AUR: {en_aur_limpio}")
+            print(
+                "Si no están instaladas, estas dependencias se instalarán con KPA para evitar errores...")
             for paquete_aur in en_aur_limpio:
                 # Verificar si el paquete ya está instalado para evitar errores
                 try:
-                    sb.run(["pacman", "-Qi", paquete_aur], check=True, capture_output=True)
+                    sb.run(["pacman", "-Qi", paquete_aur],
+                           check=True, capture_output=True)
                 except sb.CalledProcessError:  # Error producido cuando el paquete no está instalado
                     # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
                     instalar(paquete_aur.split())
@@ -90,14 +95,15 @@ def pkgbuild(paquete:str, actualizacion:bool=False, verbose:bool=False):
 
 
 @cli.command(name="-I", help="Instalar paquetes.")
-def instalar(paquetes: list[str], verbose: bool=False):
+def instalar(paquetes: list[str], verbose: bool = False):
     for paquete in paquetes:
         chdir(RUTA)
         blue(f"Clonando repositorio de {paquete}...")
         try:
             git.clone(paquete, verbose)
             chdir(join(RUTA, paquete))
-            pkgbuild(paquete, verbose=verbose)  # actualización por defecto queda en False
+            # actualización por defecto queda en False
+            pkgbuild(paquete, verbose=verbose)
         except sb.CalledProcessError:
             red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
 
@@ -112,15 +118,19 @@ def actualizar_simple(paquete, verbose):
         a_name = antiguo.get_full_package_name()
         n_name = nuevo.get_full_package_name()
         if verbose:
-            blue(f"Versión antes del pull: {a_name} y versión despues del pull: {n_name}")
+            blue(
+                f"Versión antes del pull: {a_name} y versión despues del pull: {n_name}")
         if a_name == n_name:
-            yellow(f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+            yellow(
+                f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
         else:
             blue(f"Actualización encontrada para {paquete}")
             clean_cache(ruta_paquete)
-            pkgbuild(paquete, True, verbose)  # Se cambia el estado de actualización a True para que no elimine la carpeta
+            # Se cambia el estado de actualización a True para que no elimine la carpeta
+            pkgbuild(paquete, True, verbose)
     except sb.CalledProcessError as e:
-        red(f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+        red(
+            f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
 
 
 def actualizar_uno(paquete, verbose):
@@ -139,7 +149,7 @@ def actualizar_uno(paquete, verbose):
 
 
 @cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
-def actualizar_arg(paquetes: list[str], verbose: bool=False):
+def actualizar_arg(paquetes: list[str], verbose: bool = False):
     for paquete in paquetes:
         if paquete == "todo":
             for directorio in listdir(RUTA):
@@ -160,7 +170,8 @@ def desinstalar(paquetes: list[str]):
         if value:
             try:
                 rmtree(join(RUTA, paquete))
-                sb.run([datos["root"], "pacman", "-R", paquete, "--noconfirm"], check=True)
+                sb.run([datos["root"], "pacman", "-R",
+                       paquete, "--noconfirm"], check=True)
             except FileNotFoundError:
                 red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
             except sb.CalledProcessError:
@@ -177,9 +188,11 @@ def reinstalar(paquetes: list[str]):
                     completa = join(pdir, archivo)
                     remove(completa)
             chdir(pdir)
-            pkgbuild(paquete, True)  # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
+            # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
+            pkgbuild(paquete, True)
         else:
-            red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+            red(
+                f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
 
 
 @cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug', paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
@@ -194,17 +207,21 @@ def limpiar(opciones: list[str]):
             # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
             for paquete in instalados.strip().split("\n"):
                 if paquete.endswith("-debug"):
-                    value = confirm (f"\nSe encontró el debug: {paquete}", "¿Desea eliminarlo del sistema?")
+                    value = confirm(
+                        f"\nSe encontró el debug: {paquete}", "¿Desea eliminarlo del sistema?")
                     if value:
                         try:
-                            sb.run([datos["root"], "pacman", "-R", paquete.split(" ")[0], "--noconfirm"], check=True)
+                            sb.run([datos["root"], "pacman", "-R",
+                                   paquete.split(" ")[0], "--noconfirm"], check=True)
                         except sb.CalledProcessError:
                             red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
         elif tipo == "huerfanos":
             try:
-                huerfanos = sb.check_output(["pacman", "-Qtdq"], text=True).strip()
+                huerfanos = sb.check_output(
+                    ["pacman", "-Qtdq"], text=True).strip()
             except sb.CalledProcessError as e:
-                yellow(f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
+                yellow(
+                    f"Parece que no hay paquetes huérfanos, pues se ha producido una excepción: {e}")
                 sys.exit(1)
             value = confirm(
                 "Se encontraron los siguientes paquetes huérfanos:\n\n" + huerfanos,
@@ -212,9 +229,11 @@ def limpiar(opciones: list[str]):
             )
             if value:
                 try:
-                    sb.run([datos["root"], "pacman", "-Rns", "--noconfirm"] + huerfanos.split("\n"), check=True)
+                    sb.run([datos["root"], "pacman", "-Rns",
+                           "--noconfirm"] + huerfanos.split("\n"), check=True)
                 except sb.CalledProcessError as e:
-                    red(f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
+                    red(
+                        f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
         elif tipo == "cache":
             blue("Limpiando caché de KPA...")
             for paquete in listdir(RUTA):
@@ -223,10 +242,12 @@ def limpiar(opciones: list[str]):
                 clean_cache(ppath)
             green("La caché de KPA ha sido eliminada!")
         else:
-            yellow("El tipo de limpieza ingresado no es válido, solo se permite 'debug', 'huerfanos' o 'cache'")
+            yellow(
+                "El tipo de limpieza ingresado no es válido, solo se permite 'debug', 'huerfanos' o 'cache'")
+
 
 @cli.command(name="-C", help="Cambiar la configuración en el archivo kpa.json")
-def conf(to_set:str):
+def conf(to_set: str):
     to_set_list = to_set.split("=")
     bools = {
         "True": True,
@@ -240,12 +261,14 @@ def conf(to_set:str):
     try:
         if to_set_list[0] in ["eula_detector", "clone_branch"]:
             if to_set_list[1] not in bools:
-                yellow(f"{to_set_list[0]} solo admite booleanos, use 'True', 'true' o 'False', 'false'")
+                yellow(
+                    f"{to_set_list[0]} solo admite booleanos, use 'True', 'true' o 'False', 'false'")
                 sys.exit(1)
             to_set_list[1] = bools[to_set_list[1]]
         elif to_set_list[0] == "ignorar":
             if "[" in to_set_list[1] or "]" in to_set_list[1]:
-                yellow("El valor de 'ignorar' no puede incluir corchetes, debe ser 'ignorar=\"paquete paquete2\"'")
+                yellow(
+                    "El valor de 'ignorar' no puede incluir corchetes, debe ser 'ignorar=\"paquete paquete2\"'")
                 sys.exit(1)
             to_set_list[1] = to_set_list[1].split()
         datos[to_set_list[0]] = to_set_list[1]
