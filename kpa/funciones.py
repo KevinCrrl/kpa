@@ -195,27 +195,10 @@ def reinstalar(paquetes: list[str]):
                 f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
 
 
-@cli.command(name="-L", help="Limpiar paquetes -debug con la opción 'debug', paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
+@cli.command(name="-L", help="Limpiar paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
 def limpiar(opciones: list[str]):
     for tipo in opciones:
-        if tipo == "debug":
-            try:
-                instalados = sb.check_output(["pacman", "-Qmq"], text=True)
-            except sb.CalledProcessError:
-                red("ERROR: Ha ocurrido un problema mientras se ejecutaba 'pacman -Qmq'")
-                sys.exit(1)
-            # strip() para quitar el espacio al final que produce errores al intentar eliminar los paquetes debug y huérfanos
-            for paquete in instalados.strip().split("\n"):
-                if paquete.endswith("-debug"):
-                    value = confirm(
-                        f"\nSe encontró el debug: {paquete}", "¿Desea eliminarlo del sistema?")
-                    if value:
-                        try:
-                            sb.run([datos["root"], "pacman", "-R",
-                                   paquete.split(" ")[0], "--noconfirm"], check=True)
-                        except sb.CalledProcessError:
-                            red("ERROR: Hubo un fallo al intentar remover el paquete.\n")
-        elif tipo == "huerfanos":
+        if tipo == "huerfanos":
             try:
                 huerfanos = sb.check_output(
                     ["pacman", "-Qtdq"], text=True).strip()
@@ -243,7 +226,7 @@ def limpiar(opciones: list[str]):
             green("La caché de KPA ha sido eliminada!")
         else:
             yellow(
-                "El tipo de limpieza ingresado no es válido, solo se permite 'debug', 'huerfanos' o 'cache'")
+                "El tipo de limpieza ingresado no es válido, solo se permite 'huerfanos' o 'cache'")
 
 
 @cli.command(name="-C", help="Cambiar la configuración en el archivo kpa.json")
