@@ -60,7 +60,7 @@ def clean_cache(path):
     try:
         rmtree(join(path, "src"))
         rmtree(join(path, "pkg"))
-    except PermissionError, FileNotFoundError:
+    except (PermissionError, FileNotFoundError):
         pass
     comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
         encontrar_archivos(path, ".tar.gz") + \
