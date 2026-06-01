@@ -58,14 +58,15 @@ def eula_detectado(ruta: str):
 
 def clean_cache(path):
     try:
-        rmtree("src")
-        rmtree("pkg")
-        comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
-            encontrar_archivos(path, ".tar.gz") + \
-            encontrar_archivos(path, ".tar.xz") + \
-            encontrar_archivos(path, ".deb") + \
-            encontrar_archivos(path, ".pkg.tar.xz")
-        for comprimido in comprimidos:
-            remove(comprimido)
-    except FileNotFoundError:
+        rmtree(join(path, "src"))
+        rmtree(join(path, "pkg"))
+    except PermissionError, FileNotFoundError:
         pass
+    comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
+        encontrar_archivos(path, ".tar.gz") + \
+        encontrar_archivos(path, ".tar.xz") + \
+        encontrar_archivos(path, ".deb") + \
+        encontrar_archivos(path, ".pkg.tar.xz") + \
+        encontrar_archivos(path, ".zip")
+    for comprimido in comprimidos:
+        remove(comprimido)

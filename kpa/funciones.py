@@ -95,17 +95,26 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
 
 
 @cli.command(name="-I", help="Instalar paquetes.")
-def instalar(paquetes: list[str], verbose: bool = False):
+def instalar(paquetes: list[str], verbose: bool = False, reinstall: bool = False):
     for paquete in paquetes:
         chdir(RUTA)
-        blue(f"Clonando repositorio de {paquete}...")
+        RUTA_PAQUETE = join(RUTA, paquete)
         try:
-            git.clone(paquete, verbose)
-            chdir(join(RUTA, paquete))
+            if not reinstall:
+                blue(f"Clonando repositorio de {paquete}...")
+                git.clone(paquete, verbose)
+            else:
+                if not exists(RUTA_PAQUETE):
+                    red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+                    sys.exit(1)
+                clean_cache(RUTA_PAQUETE)
+            chdir(RUTA_PAQUETE)
             # actualización por defecto queda en False
-            pkgbuild(paquete, verbose=verbose)
+            pkgbuild(paquete, reinstall, verbose)
         except sb.CalledProcessError:
-            red("ERROR: El repositorio ya estaba clonado, si su intención es actualizar use el argumento -A")
+            if confirm("""ADVERTRNCIA: El repositorio ya estaba clonado, si su intención es
+actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una reinstalación?"):
+                instalar(paquetes, verbose, True)
 
 
 def actualizar_simple(paquete, verbose):
@@ -176,23 +185,6 @@ def desinstalar(paquetes: list[str]):
                 red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
             except sb.CalledProcessError:
                 red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
-
-
-@cli.command("-R", help="Reinstalar paquetes.")
-def reinstalar(paquetes: list[str]):
-    for paquete in paquetes:
-        pdir = join(RUTA, paquete)
-        if exists(pdir):
-            for archivo in listdir(pdir):
-                if archivo.endswith(".pkg.tar.zst"):
-                    completa = join(pdir, archivo)
-                    remove(completa)
-            chdir(pdir)
-            # Aunque no es una actualización, igualmente la carpeta no se debe borrar en una reinstalación
-            pkgbuild(paquete, True)
-        else:
-            red(
-                f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
 
 
 @cli.command(name="-L", help="Limpiar paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
