@@ -26,7 +26,7 @@ cli = Typer(context_settings={"ignore_unknown_options": True, })
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 2.3.0")
+    print("KPA Versión 3.0.0-beta")
 
 
 def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
@@ -53,7 +53,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
         "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
         True, archivo_pkgbuild)
     if value:
-        pkg = Parser(archivo_pkgbuild)
+        pkg = Parser()
         dependencias: list = []
         try:
             dependencias += pkg.get_depends()
@@ -127,9 +127,9 @@ def actualizar_simple(paquete, verbose):
     ruta_paquete = join(RUTA, paquete)
     chdir(ruta_paquete)
     try:
-        antiguo = Parser("PKGBUILD")
+        antiguo = Parser()
         git.pull(verbose)
-        nuevo = Parser("PKGBUILD")
+        nuevo = Parser()
         a_name = antiguo.get_full_package_name()
         n_name = nuevo.get_full_package_name()
         if verbose:
