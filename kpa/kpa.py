@@ -23,7 +23,14 @@ from kpa.funciones import cli, RUTA
 
 @cli.callback()
 def json_help():
-    """Recuerde crear el archivo kpa.json para configurar kpa correctamente,
+    """
+KevinCrrl Python AUR Helper
+
+KPA es software libre, puedes usarlo y redistribuilo bajo los
+términos de la licencia General Public License versión 3 o
+cualquier versión posterior.
+
+Recuerde crear el archivo kpa.json para configurar kpa correctamente,
 vea en https://KevinCrrl.github.io/KevinCrrl/documentacion/kpa.html un
 ejemplo de como debería ser el archivo."""
 

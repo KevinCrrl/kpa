@@ -4,13 +4,14 @@
 from os.path import exists, join
 from os import listdir, chdir
 from shutil import rmtree
+from typing import Annotated
 import subprocess as sb
 import json
 import sys
 
 from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
 from pkgbuild_parser import Parser, parser_core
-from typer import Typer
+from typer import Typer, Option
 import jsonschema
 
 from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur, get_size_mb
@@ -21,7 +22,7 @@ from kpa import git
 
 RUTA: str = join(xdg_cache_home, "kpa")
 
-cli = Typer(context_settings={"ignore_unknown_options": True, })
+cli = Typer(suggest_commands=True)
 
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
@@ -100,8 +101,10 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
             rmtree(p_ruta)
 
 
-@cli.command(name="-I", help="Instalar paquetes.")
-def instalar(paquetes: list[str], verbose: bool = False, reinstall: bool = False):
+@cli.command(name="Ins", help="Instalar paquetes.")
+def instalar(paquetes: list[str],
+             verbose: Annotated[bool, Option(help="Mostrar información extra.")] = False,
+             reinstall: Annotated[bool, Option(help="Reinstalar el paquete en vez de intentar instalarlo.")] = False):
     for paquete in paquetes:
         chdir(RUTA)
         RUTA_PAQUETE = join(RUTA, paquete)
@@ -123,7 +126,7 @@ actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una 
                 instalar(paquetes, verbose, True)
 
 
-def actualizar_simple(paquete, verbose):
+def actualizar_simple(paquete: str, verbose: bool):
     ruta_paquete = join(RUTA, paquete)
     chdir(ruta_paquete)
     try:
@@ -163,8 +166,10 @@ def actualizar_uno(paquete: str, verbose: bool, force_ignorado: bool = False):
         red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
 
 
-@cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
-def actualizar_arg(paquetes: list[str], verbose: bool = False, ignorados: bool = False):
+@cli.command(name="Act", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
+def actualizar_arg(paquetes: list[str],
+                   verbose: Annotated[bool, Option(help="Mostrar información extra.")] = False,
+                   ignorados: Annotated[bool, Option(help="Actualizar también los paquetes ignorados.")] = False):
     for paquete in paquetes:
         if paquete == "todo":
             for directorio in listdir(RUTA):
@@ -175,7 +180,7 @@ def actualizar_arg(paquetes: list[str], verbose: bool = False, ignorados: bool =
             actualizar_uno(paquete, verbose)
 
 
-@cli.command(name="-D", help="Desinstalar paquetes.")
+@cli.command(name="Des", help="Desinstalar paquetes.")
 def desinstalar(paquetes: list[str]):
     for paquete in paquetes:
         value = confirm(
@@ -193,7 +198,7 @@ def desinstalar(paquetes: list[str]):
                 red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
 
 
-@cli.command(name="-L", help="Limpiar paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
+@cli.command(name="Lim", help="Limpiar paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
 def limpiar(opciones: list[str]):
     for tipo in opciones:
         if tipo == "huerfanos":
@@ -229,7 +234,7 @@ def limpiar(opciones: list[str]):
                 "El tipo de limpieza ingresado no es válido, solo se permite 'huerfanos' o 'cache'")
 
 
-@cli.command(name="-C", help="Cambiar la configuración en el archivo kpa.json")
+@cli.command(name="Conf", help="Cambiar la configuración en el archivo kpa.json")
 def conf(to_set: str):
     to_set_list = to_set.split("=")
     bools = {

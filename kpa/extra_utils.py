@@ -46,20 +46,22 @@ def encontrar_archivos(ruta: str, extension: str) -> list:
 
 
 def visor(ruta_archivo: str, tema: str):
-    console.print(Syntax.from_path(ruta_archivo, lexer="bash", line_numbers=True, theme=tema))
+    console.print(Syntax.from_path(
+        ruta_archivo, lexer="bash", line_numbers=True, theme=tema))
 
 
-def no_aur(ruta):
+def no_aur(ruta: str):
     red("ERROR: Intentaste clonar un repositorio no existente del AUR.")
     rmtree(ruta)
     sys.exit(1)
 
 
-def eula_detectado(ruta: str):
+def eula_detectado(ruta: str) -> bool:
     nombres_comunes: list[str] = ["eula.txt", "EULA.txt", "LICENSE.eula", "license.eula",
                                   "license.html", "LICENSE.html", "eula_text.html",
                                   "EULA_TEXT.html"]
-    licenses_comunes: list[str] = ["Proprietary", "proprietary", "Custom", "custom"]
+    licenses_comunes: list[str] = [
+        "Proprietary", "proprietary", "Custom", "custom"]
     for archivo in listdir(ruta):
         if archivo in nombres_comunes:
             return True
@@ -71,7 +73,7 @@ def eula_detectado(ruta: str):
     return False
 
 
-def clean_cache(path):
+def clean_cache(path: str):
     try:
         rmtree(join(path, "src"))
         rmtree(join(path, "pkg"))
@@ -104,7 +106,7 @@ def search_files(path: str) -> list[str]:
     return files
 
 
-def get_size_mb(path: str):
+def get_size_mb(path: str) -> float:
     total = 0
 
     for file in search_files(path):
