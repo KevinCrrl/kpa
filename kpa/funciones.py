@@ -148,9 +148,9 @@ def actualizar_simple(paquete, verbose):
             f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
 
 
-def actualizar_uno(paquete, verbose):
+def actualizar_uno(paquete: str, verbose: bool, force_ignorado: bool = False):
     if exists(join(RUTA, paquete)):
-        if paquete in datos["ignorar"]:
+        if paquete in datos["ignorar"] and not force_ignorado:
             value = confirm(
                 "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.",
                 "¿Desea actualizar a pesar de que el paquete esté en la lista?"
@@ -164,13 +164,13 @@ def actualizar_uno(paquete, verbose):
 
 
 @cli.command(name="-A", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
-def actualizar_arg(paquetes: list[str], verbose: bool = False):
+def actualizar_arg(paquetes: list[str], verbose: bool = False, ignorados: bool = False):
     for paquete in paquetes:
         if paquete == "todo":
             for directorio in listdir(RUTA):
-                if directorio == "act" or directorio in datos["ignorar"]:
+                if (not ignorados) and directorio in datos["ignorar"]:
                     continue
-                actualizar_uno(directorio, verbose)
+                actualizar_uno(directorio, verbose, True)
         else:
             actualizar_uno(paquete, verbose)
 

@@ -14,26 +14,11 @@
     Debería haber recibido una copia de la Licencia Pública General GNU
     junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>."""
 
-from os.path import exists, join
+from os.path import exists
 from os import geteuid, makedirs
 import sys
-from xdg.BaseDirectory import xdg_cache_home
 from kpa.colorprints import yellow
-from kpa.funciones import cli
-
-if geteuid() == 0:
-    yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que \
-lo requieran se gestionan internamente.")
-    print("Vuelva a ejecutar KPA como usuario no-root.")
-    sys.exit(1)
-
-# Verificación de rutas
-
-RUTA = join(xdg_cache_home, "kpa")
-
-if not exists(RUTA):
-    print("Creando ruta para KPA...\n")
-    makedirs(RUTA, exist_ok=True)
+from kpa.funciones import cli, RUTA
 
 
 @cli.callback()
@@ -44,7 +29,20 @@ ejemplo de como debería ser el archivo."""
 
 
 def main():
-    try:
-        cli()
-    except KeyboardInterrupt:
-        yellow("\nSaliendo del programa por interrupción de teclado.")
+    if geteuid() == 0:
+        yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que \
+lo requieran se gestionan internamente.")
+        print("Vuelva a ejecutar KPA como usuario no-root.")
+        sys.exit(1)
+
+    # Verificación de rutas
+
+    if not exists(RUTA):
+        print("Creando ruta para KPA...\n")
+        makedirs(RUTA, exist_ok=True)
+
+    cli()
+
+
+if __name__ == "__main__":
+    main()
