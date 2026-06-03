@@ -1,21 +1,23 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur
+from os.path import exists, join
+from os import listdir, chdir
+from shutil import rmtree
+import subprocess as sb
+import json
+import sys
+
+from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
+from pkgbuild_parser import Parser, parser_core
+from typer import Typer
+import jsonschema
+
+from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur, get_size_mb
 from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import blue, yellow, red, green
 from kpa import git
-from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
-from pkgbuild_parser import Parser, parser_core
-from os.path import exists, join
-from os import listdir, chdir, remove
-from shutil import rmtree
-from typer import Typer
-import subprocess as sb
-import jsonschema
-import json
-import sys
 
 RUTA: str = join(xdg_cache_home, "kpa")
 
@@ -42,13 +44,14 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
     user_visor = datos["visor"].split()
     try:
         if user_visor[0] == "kpa":
-            visor(archivo_pkgbuild)
+            visor(archivo_pkgbuild, datos["visor_theme"])
         else:
             sb.run(user_visor + [archivo_pkgbuild], check=True)
     except (FileNotFoundError, sb.CalledProcessError):
         no_aur(p_ruta)
     value = confirm(
-        "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?")
+        "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
+        True, archivo_pkgbuild)
     if value:
         pkg = Parser(archivo_pkgbuild)
         dependencias: list = []
@@ -79,7 +82,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
                     sb.run(["pacman", "-Qi", paquete_aur],
                            check=True, capture_output=True)
                 except sb.CalledProcessError:  # Error producido cuando el paquete no está instalado
-                    # Usar la recursividad para instalar hasta que no hayan más paquetes AUR en los demás paquetes
+                    # Usar la recursividad para instalar hasta que no hayan
+                    # más paquetes AUR en los demás
                     instalar(paquete_aur.split())
             chdir(p_ruta)
         blue("Creando paquete con makepkg...")
@@ -88,8 +92,10 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
         except sb.CalledProcessError:
             red("ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
-        # Correción de bug que eliminaba la carpeta de un paquete como si estuviera instalando cuando a veces es una actualización
-        # Esta correción evita que se borre la carpeta en caso de actualización y solo se borre si no se quiere instalar por primera vez
+        # Correción de bug que eliminaba la carpeta de un paquete como si estuviera
+        # instalando cuando a veces es una actualización
+        # Esta correción evita que se borre la carpeta en caso de actualización
+        # y solo se borre si no se quiere instalar por primera vez
         if not actualizacion:
             rmtree(p_ruta)
 
@@ -211,11 +217,13 @@ def limpiar(opciones: list[str]):
                         f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
         elif tipo == "cache":
             blue("Limpiando caché de KPA...")
+            yellow(f"Peso antes de realizar la limpieza: {round(get_size_mb(RUTA), 2)} MB")
             for paquete in listdir(RUTA):
                 ppath = join(RUTA, paquete)
                 chdir(ppath)
                 clean_cache(ppath)
             green("La caché de KPA ha sido eliminada!")
+            green(f"Peso despues de la limpieza: {round(get_size_mb(RUTA), 2)} MB")
         else:
             yellow(
                 "El tipo de limpieza ingresado no es válido, solo se permite 'huerfanos' o 'cache'")

@@ -16,13 +16,14 @@
 
 from os.path import exists, join
 from os import geteuid, makedirs
+import sys
+from xdg.BaseDirectory import xdg_cache_home
 from kpa.colorprints import yellow
 from kpa.funciones import cli
-from xdg.BaseDirectory import xdg_cache_home
-import sys
 
 if geteuid() == 0:
-    yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que lo requieran se gestionan internamente.")
+    yellow("ATENCIÓN: No se debe usar KPA con permisos root, los comandos que \
+lo requieran se gestionan internamente.")
     print("Vuelva a ejecutar KPA como usuario no-root.")
     sys.exit(1)
 

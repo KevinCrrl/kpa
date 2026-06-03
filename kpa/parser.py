@@ -1,16 +1,20 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from xdg.BaseDirectory import xdg_config_home
 from os.path import join
 import json
-from kpa.colorprints import red
-import jsonschema
 import sys
+
+from xdg.BaseDirectory import xdg_config_home
+import jsonschema
+
+from kpa.colorprints import red
 
 datos_kpa = {
     "visor": "kpa",  # Visor independiente de KPA
-    "root": "sudo",  # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
+    "visor_theme": "monokai",  # Tema por defecto de la librería usada
+    # La forma más común de acceder a root es sudo, también se usa para no dejar vacío el espacio
+    "root": "sudo",
     "ignorar": [],  # No ignorar paquetes por defecto
     "eula_detector": True,  # Activado por defecto para mejor seguridad legal
     "url": "https://aur.archlinux.org",  # URL típica del AUR
@@ -35,6 +39,7 @@ kpa_schema = {
     "type": "object",
     "properties": {
         "visor": {"type": "string"},
+        "visor_theme": {"type": "string"},
         "root": {"type": "string"},
         "ignorar": {"type": "array", "items": {"type": "string"}},
         "eula_detector": {"type": "boolean"},
