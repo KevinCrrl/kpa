@@ -8,7 +8,7 @@ import sys
 from xdg.BaseDirectory import xdg_config_home
 import jsonschema
 
-from kpa.colorprints import red
+from kpa.colorprints import red, yellow
 
 datos_kpa = {
     "visor": "kpa",  # Visor independiente de KPA
@@ -29,7 +29,7 @@ try:
     with open(join(xdg_config_home, "kpa", "kpa.json"), "r", encoding="utf-8") as cf:
         datos_usuario = json.load(cf)
 except FileNotFoundError:
-    red("ERROR: Archivo de configuración 'kpa.json' no encontrado.\n")
+    yellow("Archivo de configuración 'kpa.json' no encontrado.\n")
 except json.decoder.JSONDecodeError:
     red("ERROR: No se pudo obtener contenido del archivo 'kpa.json'\n")
 
