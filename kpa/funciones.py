@@ -169,15 +169,17 @@ def actualizar_uno(paquete: str, verbose: bool, force_ignorado: bool = False):
 @cli.command(name="Act", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
 def actualizar_arg(paquetes: list[str],
                    verbose: Annotated[bool, Option(help="Mostrar información extra.")] = False,
-                   ignorados: Annotated[bool, Option(help="Actualizar también los paquetes ignorados.")] = False):
+                   ignorados: Annotated[bool, Option(help="Actualizar los paquetes ignorados.")] = False,
+                   solo_ignorados: Annotated[bool, Option(help="Actualizar SOLO los ignorados (No aplica a paquetes individuales).")] = False):
     for paquete in paquetes:
         if paquete == "todo":
             for directorio in listdir(RUTA):
-                if (not ignorados) and directorio in datos["ignorar"]:
-                    continue
-                actualizar_uno(directorio, verbose, True)
+                if not ((not ignorados) and directorio in datos["ignorar"]) and not solo_ignorados:
+                    actualizar_uno(directorio, verbose, True)
+                elif solo_ignorados and directorio in datos["ignorar"]:
+                    actualizar_uno(directorio, verbose, True)
         else:
-            actualizar_uno(paquete, verbose)
+            actualizar_uno(paquete, verbose, ignorados)
 
 
 @cli.command(name="Des", help="Desinstalar paquetes.")
