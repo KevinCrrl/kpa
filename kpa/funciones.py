@@ -103,7 +103,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
 
 @cli.command(name="Ins", help="Instalar paquetes.")
 def instalar(paquetes: list[str],
-             verbose: Annotated[bool, Option(help="Mostrar información extra.")] = False,
+             verbose: Annotated[bool, Option(
+                 help="Mostrar información extra.")] = False,
              reinstall: Annotated[bool, Option(help="Reinstalar el paquete en vez de intentar instalarlo.")] = False):
     for paquete in paquetes:
         chdir(RUTA)
@@ -114,7 +115,8 @@ def instalar(paquetes: list[str],
                 git.clone(paquete, verbose)
             else:
                 if not exists(RUTA_PAQUETE):
-                    red(f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
+                    red(
+                        f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
                     sys.exit(1)
                 clean_cache(RUTA_PAQUETE)
             chdir(RUTA_PAQUETE)
@@ -126,60 +128,82 @@ actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una 
                 instalar(paquetes, verbose, True)
 
 
-def actualizar_simple(paquete: str, verbose: bool):
-    ruta_paquete = join(RUTA, paquete)
-    chdir(ruta_paquete)
-    try:
-        antiguo = Parser()
-        git.pull(verbose)
-        nuevo = Parser()
-        a_name = antiguo.get_full_package_name()
-        n_name = nuevo.get_full_package_name()
-        if verbose:
-            blue(
-                f"Versión antes del pull: {a_name} y versión despues del pull: {n_name}")
-        if a_name == n_name:
-            yellow(
-                f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
-        else:
-            blue(f"Actualización encontrada para {paquete}")
-            clean_cache(ruta_paquete)
-            # Se cambia el estado de actualización a True para que no elimine la carpeta
-            pkgbuild(paquete, True, verbose)
-    except sb.CalledProcessError as e:
-        red(
-            f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+class Updater:
+    def __init__(self, paquetes: list[str], verbose: bool,
+                 force: bool, ignorados: bool, solo_ignorados: bool):
+        self.paquetes = paquetes
+        self.verbose = verbose
+        self.force = force
+        self.ignorados = ignorados
+        self.solo_ignorados = solo_ignorados
 
+    def actualizar_simple(self, paquete: str):
+        ruta_paquete: str = join(RUTA, paquete)
+        chdir(ruta_paquete)
+        try:
+            antiguo = Parser()
+            git.pull(self.verbose)
+            nuevo = Parser()
+            a_name: str = antiguo.get_full_package_name()
+            n_name: str = nuevo.get_full_package_name()
+            if self.verbose:
+                blue(
+                    f"Versión antes del pull: {a_name} y versión despues del pull: {n_name}")
+            if a_name == n_name:
+                yellow(
+                    f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
+            else:
+                blue(f"Actualización encontrada para {paquete}")
+                clean_cache(ruta_paquete)
+                # Se cambia el estado de actualización a True para que no elimine la carpeta
+                pkgbuild(paquete, True, self.verbose)
+        except sb.CalledProcessError as e:
+            red(
+                f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
+            if self.force:
+                yellow("Reintentando en modo force...")
+                rmtree(join(RUTA, paquete))
+                pkgbuild(paquete, verbose=self.verbose)
 
-def actualizar_uno(paquete: str, verbose: bool, force_ignorado: bool = False):
-    if exists(join(RUTA, paquete)):
-        if paquete in datos["ignorar"] and not force_ignorado:
-            value = confirm(
-                "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.",
-                "¿Desea actualizar a pesar de que el paquete esté en la lista?"
-            )
-            if value:
-                actualizar_simple(paquete, verbose)
+    def actualizar_uno(self, paquete: str):
+        if exists(join(RUTA, paquete)):
+            if paquete in datos["ignorar"] and (not self.ignorados and not self.solo_ignorados):
+                value = confirm(
+                    "ADVERTENCIA: El paquete que está intentando actualizar se encuentra en la lista de ignorados.",
+                    "¿Desea actualizar a pesar de que el paquete esté en la lista?"
+                )
+                if value:
+                    self.actualizar_simple(paquete)
+            else:
+                self.actualizar_simple(paquete)
         else:
-            actualizar_simple(paquete, verbose)
-    else:
-        red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
+            red(f"ERROR: {paquete} no ha sido clonado, para ello use el argumento -I")
+
+    def iniciar_actualizar(self):
+        for paquete in self.paquetes:
+            if paquete == "todo":
+                for directorio in listdir(RUTA):
+                    if not ((not self.ignorados) and directorio
+                            in datos["ignorar"]) and not self.solo_ignorados:
+                        self.actualizar_uno(directorio)
+                    elif self.solo_ignorados and directorio in datos["ignorar"]:
+                        self.actualizar_uno(directorio)
+            else:
+                self.actualizar_uno(paquete)
 
 
 @cli.command(name="Act", help="Actualizar paquetes, use 'todo' para actualizar todos los paquetes.")
 def actualizar_arg(paquetes: list[str],
-                   verbose: Annotated[bool, Option(help="Mostrar información extra.")] = False,
-                   ignorados: Annotated[bool, Option(help="Actualizar los paquetes ignorados.")] = False,
-                   solo_ignorados: Annotated[bool, Option(help="Actualizar SOLO los ignorados (No aplica a paquetes individuales).")] = False):
-    for paquete in paquetes:
-        if paquete == "todo":
-            for directorio in listdir(RUTA):
-                if not ((not ignorados) and directorio in datos["ignorar"]) and not solo_ignorados:
-                    actualizar_uno(directorio, verbose, True)
-                elif solo_ignorados and directorio in datos["ignorar"]:
-                    actualizar_uno(directorio, verbose, True)
-        else:
-            actualizar_uno(paquete, verbose, ignorados)
+                   verbose: Annotated[bool, Option(
+                       help="Mostrar información extra.")] = False,
+                   force: Annotated[bool, Option(
+                       help="Forzar la actualización en caso de error.")] = False,
+                   ignorados: Annotated[bool, Option(
+                       help="Actualizar los paquetes ignorados.")] = False,
+                   solo_ignorados: Annotated[bool, Option(help="Actualizar SOLO los ignorados \
+(No aplica a paquetes individuales).")] = False):
+    Updater(paquetes, verbose, force, ignorados,
+            solo_ignorados).iniciar_actualizar()
 
 
 @cli.command(name="Des", help="Desinstalar paquetes.")
@@ -195,12 +219,15 @@ def desinstalar(paquetes: list[str]):
                 sb.run([datos["root"], "pacman", "-R",
                        paquete, "--noconfirm"], check=True)
             except FileNotFoundError:
-                red("ERROR: Este paquete no se encuentra en la carpeta kpa, por ende no se intentará desinstalar.")
+                red("ERROR: Este paquete no se encuentra en la carpeta kpa, \
+por ende no se intentará desinstalar.")
             except sb.CalledProcessError:
-                red("ERROR: Es posible que el paquete ya no estuviera instalado, pues falló el intentar eliminarlo con Pacman.")
+                red("ERROR: Es posible que el paquete ya no estuviera \
+instalado, pues falló el intentar eliminarlo con Pacman.")
 
 
-@cli.command(name="Lim", help="Limpiar paquetes huérfanos con la opción 'huerfanos' o caché con la opción 'cache'")
+@cli.command(name="Limp", help="Limpiar paquetes huérfanos \
+con la opción 'huerfanos' o caché con la opción 'cache'")
 def limpiar(opciones: list[str]):
     for tipo in opciones:
         if tipo == "huerfanos":
@@ -224,13 +251,15 @@ def limpiar(opciones: list[str]):
                         f"ERROR: Fallo al intentar eliminar los paquetes huérfanos: {e}")
         elif tipo == "cache":
             blue("Limpiando caché de KPA...")
-            yellow(f"Peso antes de realizar la limpieza: {round(get_size_mb(RUTA), 2)} MB")
+            yellow(
+                f"Peso antes de realizar la limpieza: {round(get_size_mb(RUTA), 2)} MB")
             for paquete in listdir(RUTA):
                 ppath = join(RUTA, paquete)
                 chdir(ppath)
                 clean_cache(ppath)
             green("La caché de KPA ha sido eliminada!")
-            green(f"Peso despues de la limpieza: {round(get_size_mb(RUTA), 2)} MB")
+            green(
+                f"Peso despues de la limpieza: {round(get_size_mb(RUTA), 2)} MB")
         else:
             yellow(
                 "El tipo de limpieza ingresado no es válido, solo se permite 'huerfanos' o 'cache'")
