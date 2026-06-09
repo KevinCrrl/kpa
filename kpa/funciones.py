@@ -12,9 +12,11 @@ import sys
 from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
 from pkgbuild_parser import Parser, parser_core
 from typer import Typer, Option
+from rich.syntax import Syntax
 import jsonschema
 
-from kpa.extra_utils import clean_cache, confirm, eula_detectado, visor, no_aur, get_size_mb
+from kpa.extra_utils import (clean_cache, confirm, eula_detectado,
+                             visor, no_aur, get_size_mb, console)
 from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import blue, yellow, red, green
@@ -30,7 +32,7 @@ def version():
     print("KPA Versión 3.0.0-beta")
 
 
-def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
+def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False, ignore_pkgbuild: bool = False):
     p_ruta = join(RUTA, paquete)
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
@@ -41,18 +43,24 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False):
         if not value:
             rmtree(p_ruta)
             sys.exit()
-    archivo_pkgbuild = join(p_ruta, "PKGBUILD")
-    user_visor = datos["visor"].split()
-    try:
-        if user_visor[0] == "kpa":
-            visor(archivo_pkgbuild, datos["visor_theme"])
-        else:
-            sb.run(user_visor + [archivo_pkgbuild], check=True)
-    except (FileNotFoundError, sb.CalledProcessError):
-        no_aur(p_ruta)
-    value = confirm(
-        "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
-        True, archivo_pkgbuild)
+    if not ignore_pkgbuild:
+        archivo_pkgbuild = join(p_ruta, "PKGBUILD")
+        user_visor = datos["visor"].split()
+        try:
+            if user_visor[0] == "kpa":
+                visor(archivo_pkgbuild, datos["visor_theme"])
+            else:
+                sb.run(user_visor + [archivo_pkgbuild], check=True)
+        except (FileNotFoundError, sb.CalledProcessError):
+            no_aur(p_ruta)
+    if actualizacion:
+        value = confirm(
+            "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
+            True, archivo_pkgbuild)
+    else:
+        value = confirm(
+            "", "\nLea el PKGBUILD y/o diff del pull realizado, ¿Desea continuar con la construcción?",
+            True, archivo_pkgbuild)
     if value:
         pkg = Parser()
         dependencias: list = []
@@ -130,19 +138,22 @@ actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una 
 
 class Updater:
     def __init__(self, paquetes: list[str], verbose: bool,
-                 force: bool, ignorados: bool, solo_ignorados: bool):
+                 force: bool, ignorados: bool, solo_ignorados: bool,
+                 ignore_diff: bool, ignore_pkgbuild: bool):
         self.paquetes = paquetes
         self.verbose = verbose
         self.force = force
         self.ignorados = ignorados
         self.solo_ignorados = solo_ignorados
+        self.ignore_diff = ignore_diff
+        self.ignore_pkgbuild = ignore_pkgbuild
 
     def actualizar_simple(self, paquete: str):
         ruta_paquete: str = join(RUTA, paquete)
         chdir(ruta_paquete)
         try:
             antiguo = Parser()
-            git.pull(self.verbose)
+            output: str = git.pull(self.verbose, self.ignore_diff)
             nuevo = Parser()
             a_name: str = antiguo.get_full_package_name()
             n_name: str = nuevo.get_full_package_name()
@@ -154,16 +165,27 @@ class Updater:
                     f"No hay una nueva versión de {paquete}, las versiones en los PKGBUILDs siguen siendo iguales.\n")
             else:
                 blue(f"Actualización encontrada para {paquete}")
+                if not self.ignore_diff:
+                    if output == "" and self.ignore_pkgbuild:
+                        yellow(
+                            "El diff está vacío por un aparente error, se forzará la vista del PKGBUILD completo.")
+                        self.ignore_pkgbuild = False
+                    else:
+                        blue("Mostrando diff...\n")
+                        console.print(
+                            Syntax(output, "diff", theme=datos["visor_theme"], line_numbers=True))
+                        if not self.ignore_pkgbuild:
+                            blue("\n\nMostrando PKGBUILD...\n")
                 clean_cache(ruta_paquete)
                 # Se cambia el estado de actualización a True para que no elimine la carpeta
-                pkgbuild(paquete, True, self.verbose)
+                pkgbuild(paquete, True, self.verbose, self.ignore_pkgbuild)
         except sb.CalledProcessError as e:
             red(
                 f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
             if self.force:
                 yellow("Reintentando en modo force...")
                 rmtree(join(RUTA, paquete))
-                pkgbuild(paquete, verbose=self.verbose)
+                pkgbuild(paquete, True, self.verbose)
 
     def actualizar_uno(self, paquete: str):
         if exists(join(RUTA, paquete)):
@@ -200,10 +222,18 @@ def actualizar_arg(paquetes: list[str],
                        help="Forzar la actualización en caso de error.")] = False,
                    ignorados: Annotated[bool, Option(
                        help="Actualizar los paquetes ignorados.")] = False,
+                   ignore_diff: Annotated[bool, Option(
+                       help="No mostrar el diff de cambios, solo el PKGBUILD.")] = False,
+                   ignore_pkgbuild: Annotated[bool, Option(
+                       help="No muestra el PKGBUILD, solo el diff")] = False,
                    solo_ignorados: Annotated[bool, Option(help="Actualizar SOLO los ignorados \
 (No aplica a paquetes individuales).")] = False):
+    if ignore_pkgbuild and ignore_diff:
+        red("""ERROR: No se puede ignorar tanto el PKGBUILD como el diff.
+Esto supone un riesgo de seguridad, solo puede ignorar una de las 2 cosas.""")
+        sys.exit(1)
     Updater(paquetes, verbose, force, ignorados,
-            solo_ignorados).iniciar_actualizar()
+            solo_ignorados, ignore_diff, ignore_pkgbuild).iniciar_actualizar()
 
 
 @cli.command(name="Des", help="Desinstalar paquetes.")
