@@ -26,7 +26,7 @@ def json_help():
     """
 KevinCrrl Python AUR Helper
 
-KPA es software libre, puedes usarlo y redistribuilo bajo los
+KPA es software libre, puedes usarlo y redistribuirlo bajo los
 términos de la licencia General Public License versión 3 o
 cualquier versión posterior.
 

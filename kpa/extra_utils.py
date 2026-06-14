@@ -10,8 +10,9 @@ import sys
 
 from rich.console import Console
 from rich.syntax import Syntax
-
 from pkgbuild_parser import Parser
+
+from kpa.parser import datos
 from kpa.colorprints import yellow, yellow_input, red
 
 console = Console(emoji=False)
@@ -45,9 +46,9 @@ def encontrar_archivos(ruta: str, extension: str) -> list:
     return list(Path(ruta).glob(f"*{extension}"))
 
 
-def visor(ruta_archivo: str, tema: str):
+def visor(ruta_archivo: str):
     console.print(Syntax.from_path(
-        ruta_archivo, lexer="bash", line_numbers=True, theme=tema))
+        ruta_archivo, lexer="bash", line_numbers=True, theme=datos["visor_theme"]))
 
 
 def no_aur(ruta: str):

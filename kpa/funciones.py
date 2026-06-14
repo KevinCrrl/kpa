@@ -10,7 +10,7 @@ import json
 import sys
 
 from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
-from pkgbuild_parser import Parser, parser_core
+from pkgbuild_parser import Parser, ParserKeyError
 from typer import Typer, Option
 from rich.syntax import Syntax
 import jsonschema
@@ -29,11 +29,13 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.0.0-beta")
+    print("KPA Versión 3.0.0")
 
 
-def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False, ignore_pkgbuild: bool = False):
+def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
+             ignore_pkgbuild: bool = False, show_install_script: bool = False):
     p_ruta = join(RUTA, paquete)
+    pkg = Parser()
     print("\n")
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
         value = confirm(
@@ -48,11 +50,22 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False, i
         user_visor = datos["visor"].split()
         try:
             if user_visor[0] == "kpa":
-                visor(archivo_pkgbuild, datos["visor_theme"])
+                visor(archivo_pkgbuild)
             else:
                 sb.run(user_visor + [archivo_pkgbuild], check=True)
         except (FileNotFoundError, sb.CalledProcessError):
             no_aur(p_ruta)
+
+    if (not actualizacion) or show_install_script:
+        try:
+            install_script = pkg.get_install()
+            yellow("\nADVERTENCIA: Se ha detectado un script install en el PKGBUILD, se imprimirá para que lo lea:\n")
+            visor(join(p_ruta, install_script))
+        except ParserKeyError:
+            pass  # No hay install en el PKGBUILD, se pasa por alto
+        except FileNotFoundError:
+            yellow(f"ADVERTENCIA: El script install parece usar un nombre complejo que no se pudo resolver: {install_script}")
+
     if actualizacion:
         value = confirm(
             "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
@@ -62,14 +75,13 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False, i
             "", "\nLea el PKGBUILD y/o diff del pull realizado, ¿Desea continuar con la construcción?",
             True, archivo_pkgbuild)
     if value:
-        pkg = Parser()
         dependencias: list = []
         try:
             dependencias += pkg.get_depends()
             # Sumar por separado ya que no todos los paquetes tienen makedepends o checkdepends
             dependencias += pkg.get_makedepends()
             dependencias += pkg.get_checkdepends()
-        except parser_core.ParserKeyError:
+        except ParserKeyError:
             pass
         if verbose:
             blue(
@@ -113,7 +125,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False, i
 def instalar(paquetes: list[str],
              verbose: Annotated[bool, Option(
                  help="Mostrar información extra.")] = False,
-             reinstall: Annotated[bool, Option(help="Reinstalar el paquete en vez de intentar instalarlo.")] = False):
+             reinstall: Annotated[bool, Option(help="Reinstalar el paquete en vez de intentar instalarlo.")] = False,
+             show_install_script: Annotated[bool, Option(help="Mostrar el script install incluso en una reinstalación.")] = False):
     for paquete in paquetes:
         chdir(RUTA)
         RUTA_PAQUETE = join(RUTA, paquete)
@@ -129,7 +142,7 @@ def instalar(paquetes: list[str],
                 clean_cache(RUTA_PAQUETE)
             chdir(RUTA_PAQUETE)
             # actualización por defecto queda en False
-            pkgbuild(paquete, reinstall, verbose)
+            pkgbuild(paquete, reinstall, verbose, False, show_install_script)
         except sb.CalledProcessError:
             if confirm("""ADVERTRNCIA: El repositorio ya estaba clonado, si su intención es
 actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una reinstalación?"):
