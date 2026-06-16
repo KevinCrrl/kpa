@@ -29,7 +29,7 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.0.0")
+    print("KPA Versión 3.0.1")
 
 
 def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
@@ -66,7 +66,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         except FileNotFoundError:
             yellow(f"ADVERTENCIA: El script install parece usar un nombre complejo que no se pudo resolver: {install_script}")
 
-    if actualizacion:
+    if not actualizacion:
         value = confirm(
             "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
             True, archivo_pkgbuild)
@@ -141,12 +141,11 @@ def instalar(paquetes: list[str],
                     sys.exit(1)
                 clean_cache(RUTA_PAQUETE)
             chdir(RUTA_PAQUETE)
-            # actualización por defecto queda en False
             pkgbuild(paquete, reinstall, verbose, False, show_install_script)
         except sb.CalledProcessError:
             if confirm("""ADVERTRNCIA: El repositorio ya estaba clonado, si su intención es
 actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una reinstalación?"):
-                instalar(paquetes, verbose, True)
+                instalar(paquetes, verbose, True, show_install_script)
 
 
 class Updater:

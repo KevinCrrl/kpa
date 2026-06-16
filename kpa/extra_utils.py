@@ -31,7 +31,7 @@ def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = ""
             correct_input = True
         elif answer_fix == "e" and e_mode:
             try:
-                run([getenv("EDITOR"), file_emode], check=True, shell=False)
+                run(getenv("EDITOR").split() + [file_emode], check=True, shell=False)
             except CalledProcessError as e:
                 yellow(f"Error al abrir el editor: {e}")
         else:
