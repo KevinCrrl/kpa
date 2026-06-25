@@ -8,14 +8,11 @@ from os import listdir, remove, getenv
 from subprocess import run, CalledProcessError
 import sys
 
-from rich.console import Console
 from rich.syntax import Syntax
 from pkgbuild_parser import Parser
 
 from kpa.parser import datos
-from kpa.colorprints import yellow, yellow_input, red
-
-console = Console(emoji=False)
+from kpa.colorprints import yellow, yellow_input, red, console
 
 
 def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = "") -> bool:
@@ -118,3 +115,41 @@ def get_size_mb(path: str) -> float:
                 pass
 
     return total / 1024 ** 2  # MB
+
+
+def anti_idn_attack(sources: list[str]):
+    abc: str = "abcdefghijklmnopqrstuvwxyz1234567890:/$¿?={}.,-_!¡[]#*+~&%';<>| "
+    urls = 0
+    for source in sources:
+        alert = False
+        positions: list[int] = []
+        count: int = 0
+        for char in source.lower():
+            if char not in abc:
+                alert = True
+                positions.append(count)
+
+            count += 1
+
+        if alert:
+            urls += 1
+            red("ALERTA DE ATAQUE DE HOMÓGRAFOS DE IDN; URL sospechosa:")
+            print(source)
+            for i in range(len(source)):
+                if i in positions:
+                    red("^", "")
+                else:
+                    print(" ", end="")
+
+            print()
+
+        count = 0
+        positions = []
+
+    if urls != 0:
+        red(f"Se encontraron {urls} sources sospechosos, aunque pueden ser falsas alarmas. Lea más aquí:")
+        print("https://en.wikipedia.org/wiki/IDN_homograph_attack\n")
+        return confirm("Los sources sospechosos pueden ser URLs que suplantan a una original.",
+                       "¿Continuar a pesar de la advertencia o pasar falsa alarma?")
+
+    return True

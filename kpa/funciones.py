@@ -16,10 +16,10 @@ from rich.syntax import Syntax
 import jsonschema
 
 from kpa.extra_utils import (clean_cache, confirm, eula_detectado,
-                             visor, no_aur, get_size_mb, console)
+                             visor, no_aur, get_size_mb, anti_idn_attack)
 from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
-from kpa.colorprints import blue, yellow, red, green
+from kpa.colorprints import blue, yellow, red, green, console
 from kpa import git
 
 RUTA: str = join(xdg_cache_home, "kpa")
@@ -29,7 +29,7 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.0.1")
+    print("KPA Versión 3.1.0")
 
 
 def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
@@ -37,6 +37,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
     p_ruta = join(RUTA, paquete)
     pkg = Parser()
     print("\n")
+
+    # DETECCION DE EULA
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
         value = confirm(
             "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.",
@@ -45,6 +47,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         if not value:
             rmtree(p_ruta)
             sys.exit()
+
+    # MOSTRAR PKGBUILD O NO
     if not ignore_pkgbuild:
         archivo_pkgbuild = join(p_ruta, "PKGBUILD")
         user_visor = datos["visor"].split()
@@ -56,6 +60,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         except (FileNotFoundError, sb.CalledProcessError):
             no_aur(p_ruta)
 
+    # MOSTRAR SCRIPT DE INSTALACION O NO
     if (not actualizacion) or show_install_script:
         try:
             install_script = pkg.get_install()
@@ -66,6 +71,18 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         except FileNotFoundError:
             yellow(f"ADVERTENCIA: El script install parece usar un nombre complejo que no se pudo resolver: {install_script}")
 
+    # VERIFICAR ATAQUES IDN
+    try:
+        sources: list[str] = pkg.get_source()
+    except ParserKeyError:
+        sources = pkg.multiline(f"source_{pkg.get_arch()[0]}")
+
+    if not anti_idn_attack(sources):
+        if not actualizacion:
+            rmtree(p_ruta)
+        sys.exit(1)
+
+    # PREGUNTAR POR LA LECTURA DEL PKGBUILD
     if not actualizacion:
         value = confirm(
             "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
@@ -74,6 +91,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         value = confirm(
             "", "\nLea el PKGBUILD y/o diff del pull realizado, ¿Desea continuar con la construcción?",
             True, archivo_pkgbuild)
+
+    # VERIFICAR DEPENDENCIAS SI SE ACEPTA LA INSTALACION
     if value:
         dependencias: list = []
         try:
@@ -107,6 +126,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
                     # más paquetes AUR en los demás
                     instalar(paquete_aur.split())
             chdir(p_ruta)
+
+        # INSTALAR
         blue("Creando paquete con makepkg...")
         try:
             sb.run(["makepkg", "-sfi"], check=True)

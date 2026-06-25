@@ -1,29 +1,28 @@
 # Copyright (C) 2025-2026 KevinCrrl
 # Licencia GPL 3 o superior (ver archivo LICENSE)
 
-from typer import secho, colors
+from rich.console import Console
+
+# https://rich.readthedocs.io/en/stable/appendix/colors.html#appendix-colors
+console = Console(emoji=False)
 
 
-def basic_print(text, color=colors.WHITE):
-    secho(text, fg=color)
+def red(text: str, end: str = "\n"):
+    console.print(text, style="bright_red bold", end=end)
 
 
-def red(text):
-    basic_print(text, colors.RED)
+def yellow(text: str, end: str = "\n"):
+    console.print(text, style="bright_yellow", end=end)
 
 
-def yellow(text):
-    basic_print(text, colors.YELLOW)
+def blue(text: str, end: str = "\n"):
+    console.print(text, style="bright_blue", end=end)
 
 
-def blue(text):
-    basic_print(text, colors.BLUE)
+def green(text: str, end: str = "\n"):
+    console.print(text, style="bright_green", end=end)
 
 
-def green(text):
-    basic_print(text, colors.GREEN)
-
-
-def yellow_input(text):
-    secho(text, fg=colors.YELLOW)
+def yellow_input(text: str):
+    console.print(text + " ", style="bright_yellow", end="")
     return input()
