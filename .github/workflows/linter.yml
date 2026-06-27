@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: alpine:latest
-    name: Lint
+    name: flake8 Lint
     steps:
       - name: Check out source repository
         uses: actions/checkout@v5
@@ -16,3 +16,17 @@ jobs:
           apk update && apk upgrade --no-cache
           apk add py3-flake8 --no-cache
           flake8 kpa
+
+  shellcheck-lint:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    name: ShellCheck Lint
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v5
+      - name: ShellCheck Lint
+        run: |
+          apk update && apk upgrade --no-cache
+          apk add shellcheck --no-cache
+          shellcheck mkpa.sh --format=diff --enable=all --shell=sh
