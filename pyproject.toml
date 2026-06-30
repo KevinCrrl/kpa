@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kpa"
-version = "3.0.1"
+version = "3.1.0"
 authors = [
   { name="KevinCrrl" },
 ]
@@ -26,7 +26,6 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/KevinCrrl/kpa"
 "Bug Tracker" = "https://github.com/KevinCrrl/kpa/issues"
-
 
 [project.scripts]
 kpa = "kpa.kpa:main"

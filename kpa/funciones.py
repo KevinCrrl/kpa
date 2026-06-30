@@ -41,7 +41,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
     # DETECCION DE EULA
     if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
         value = confirm(
-            "ADVERTENCIA: El paquete que intenta instalar contiene un posible EULA, se recomienda que lo lea antes de instalar.",
+            "ADVERTENCIA: Posible EULA, se recomienda que lo lea antes de instalar.",
             "¿Desea continuar con la instalación de un paquete con EULA?",
         )
         if not value:

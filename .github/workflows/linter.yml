@@ -10,7 +10,7 @@ jobs:
     name: flake8 Lint
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: flake8 Lint
         run: |
           apk update && apk upgrade --no-cache
@@ -24,7 +24,7 @@ jobs:
     name: ShellCheck Lint
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: ShellCheck Lint
         run: |
           apk update && apk upgrade --no-cache
