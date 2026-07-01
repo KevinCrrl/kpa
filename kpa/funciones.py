@@ -39,7 +39,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
     print("\n")
 
     # DETECCION DE EULA
-    if datos["eula_detector"] and eula_detectado(join(RUTA, paquete)) and not actualizacion:
+    if datos["eula_detector"] and eula_detectado(join(RUTA, paquete), pkg) and not actualizacion:
         value = confirm(
             "ADVERTENCIA: Posible EULA, se recomienda que lo lea antes de instalar.",
             "¿Desea continuar con la instalación de un paquete con EULA?",
@@ -49,8 +49,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
             sys.exit()
 
     # MOSTRAR PKGBUILD O NO
+    archivo_pkgbuild = join(p_ruta, "PKGBUILD")
     if not ignore_pkgbuild:
-        archivo_pkgbuild = join(p_ruta, "PKGBUILD")
         user_visor = datos["visor"].split()
         try:
             if user_visor[0] == "kpa":

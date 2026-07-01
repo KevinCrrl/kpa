@@ -54,20 +54,18 @@ def no_aur(ruta: str):
     sys.exit(1)
 
 
-def eula_detectado(ruta: str) -> bool:
+def eula_detectado(ruta: str, parser: Parser) -> bool:
     nombres_comunes: list[str] = ["eula.txt", "license.eula",
                                   "license.html", "eula_text.html",]
-    licenses_comunes: list[str] = [
-        "Proprietary", "proprietary", "Custom", "custom",
-        "EULA", "eula"]
+    licenses_comunes: list[str] = ["proprietary", "custom", "eula"]
     for archivo in listdir(ruta):
         if archivo.lower() in nombres_comunes:
             yellow(f"Posible EULA detectado en archivo: {archivo}")
             return True
-    pkg_licenses: list[str] = Parser(join(ruta, "PKGBUILD")).get_license()
+    pkg_licenses: list[str] = parser.get_license()
     for license_comun in licenses_comunes:
         for pkg_license in pkg_licenses:
-            if license_comun in pkg_license:
+            if license_comun in pkg_license.lower():
                 yellow(f"Posible EULA detectado en PKGBUILD: {pkg_license}")
                 return True
     return False
