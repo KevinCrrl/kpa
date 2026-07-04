@@ -18,6 +18,7 @@ from kpa.colorprints import yellow, yellow_input, red, console
 def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = "") -> bool:
     correct_input: bool = False
     yellow(text)
+    answer_fix: str = ""
     while not correct_input:
         if e_mode:
             answer = yellow_input(f"{question} (S/N/[E]ditar):")
@@ -27,8 +28,13 @@ def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = ""
         if answer_fix in ('s', 'n'):
             correct_input = True
         elif answer_fix == "e" and e_mode:
+            editor: str | None = getenv("EDITOR")
+            if editor is None:
+                yellow("EDITOR no está definido, se intentará usar Nano como editor...")
+                editor = "nano"
+
             try:
-                run(getenv("EDITOR").split() + [file_emode], check=True, shell=False)
+                run(editor.split() + [file_emode], check=True, shell=False)
             except CalledProcessError as e:
                 yellow(f"Error al abrir el editor: {e}")
         else:
@@ -77,11 +83,10 @@ def clean_cache(path: str):
         rmtree(join(path, "pkg"))
     except (PermissionError, FileNotFoundError):
         pass
-    comprimidos = encontrar_archivos(path, ".pkg.tar.zst") + \
+    comprimidos = encontrar_archivos(path, ".tar.zst") + \
         encontrar_archivos(path, ".tar.gz") + \
         encontrar_archivos(path, ".tar.xz") + \
         encontrar_archivos(path, ".deb") + \
-        encontrar_archivos(path, ".pkg.tar.xz") + \
         encontrar_archivos(path, ".zip")
     for comprimido in comprimidos:
         remove(comprimido)

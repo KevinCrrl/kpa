@@ -62,8 +62,8 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
 
     # MOSTRAR SCRIPT DE INSTALACION O NO
     if (not actualizacion) or show_install_script:
+        install_script: str = pkg.get_install()
         try:
-            install_script = pkg.get_install()
             yellow("\nADVERTENCIA: Se ha detectado un script install en el PKGBUILD, se imprimirá para que lo lea:\n")
             visor(join(p_ruta, install_script))
         except ParserKeyError:
@@ -330,7 +330,7 @@ def limpiar(opciones: list[str]):
 
 @cli.command(name="Conf", help="Cambiar la configuración en el archivo kpa.json")
 def conf(to_set: str):
-    to_set_list = to_set.split("=")
+    to_set_list: list = to_set.split("=")
     bools = {
         "True": True,
         "False": False,
@@ -363,5 +363,7 @@ def conf(to_set: str):
             json.dump(datos, cf, indent=4, ensure_ascii=False)
     except IndexError:
         red("ERROR: El valor que intentaste configurar no tiene el estilo 'llave=valor'")
-    except jsonschema.exceptions.ValidationError as e:
-        red(f"Error: Falló la validación de la configuración: {e}")
+    except jsonschema.ValidationError as e:
+        red(f"ERROR: Falló la validación de la configuración: {e}")
+    except UnicodeEncodeError as e:
+        red(f"ERROR: Problema relacionado con la codificación del valor ingresado: {e}")

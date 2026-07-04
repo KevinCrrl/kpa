@@ -51,7 +51,7 @@ kpa_schema = {
 
 try:
     jsonschema.validate(datos_usuario, kpa_schema)
-except jsonschema.exceptions.ValidationError as e:
+except jsonschema.ValidationError as e:
     red(
         f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
     sys.exit(1)
