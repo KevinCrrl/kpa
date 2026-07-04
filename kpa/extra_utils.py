@@ -83,13 +83,12 @@ def clean_cache(path: str):
         rmtree(join(path, "pkg"))
     except (PermissionError, FileNotFoundError):
         pass
-    comprimidos = encontrar_archivos(path, ".tar.zst") + \
-        encontrar_archivos(path, ".tar.gz") + \
-        encontrar_archivos(path, ".tar.xz") + \
-        encontrar_archivos(path, ".deb") + \
-        encontrar_archivos(path, ".zip")
-    for comprimido in comprimidos:
-        remove(comprimido)
+    to_remove: list[str] = []
+    extensiones: list[str] = [".tar.zst", ".tar.gz", "tar.xz", ".deb", ".zip", ".part", ".sig"]
+    for extension in extensiones:
+        to_remove += encontrar_archivos(path, extension)
+    for file_to_remove in to_remove:
+        remove(file_to_remove)
 
 
 def search_files(path: str) -> list[str]:
