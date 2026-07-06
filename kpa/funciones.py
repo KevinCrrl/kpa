@@ -16,8 +16,7 @@ from rich.syntax import Syntax
 import jsonschema
 
 from kpa.extra_utils import (clean_cache, confirm, eula_detectado,
-                             visor, no_aur, get_size_mb, anti_idn_attack,
-                             encontrar_archivos)
+                             visor, no_aur, get_size_mb, anti_idn_attack)
 from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import blue, yellow, red, green, console
@@ -131,7 +130,7 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
         # INSTALAR
         blue("Creando paquete con makepkg...")
         try:
-            sb.run(["makepkg", "-sfi"], check=True)
+            sb.run(["makepkg", "-si"], check=True)
         except sb.CalledProcessError:
             red("ERROR: Fallo al construir o instalar el paquete con makepkg.")
     else:
@@ -148,14 +147,10 @@ def instalar(paquetes: list[str],
              verbose: Annotated[bool, Option(
                  help="Mostrar información extra.")] = False,
              reinstall: Annotated[bool, Option(help="Reinstalar el paquete en vez de intentar instalarlo.")] = False,
-             show_install_script: Annotated[bool, Option(help="Mostrar el script install incluso en una reinstalación.")] = False,
-             skip_build: Annotated[bool, Option(help="No construir el paquete, buscar uno ya construido.")] = False):
+             show_install_script: Annotated[bool, Option(help="Mostrar el script install incluso en una reinstalación.")] = False):
     for paquete in paquetes:
         chdir(RUTA)
         RUTA_PAQUETE = join(RUTA, paquete)
-        if skip_build and not reinstall:
-            red("ERROR: Ignorar la construcción es un proceso que solo se puede realizar en reinstalaciones.")
-            sys.exit(1)
         try:
             if not reinstall:
                 blue(f"Clonando repositorio de {paquete}...")
@@ -165,21 +160,8 @@ def instalar(paquetes: list[str],
                     red(
                         f"ERROR: No se puede reinstalar {paquete} ya que no está instalado.")
                     sys.exit(1)
-                if not skip_build:
-                    clean_cache(RUTA_PAQUETE)
             chdir(RUTA_PAQUETE)
-            if skip_build:
-                try:
-                    paquetes = encontrar_archivos(RUTA_PAQUETE, ".pkg.tar.zst") + \
-                        encontrar_archivos(RUTA_PAQUETE, ".pkg.tar.xz")
-                    if len(paquetes) == 0:
-                        yellow(f"No hay paquetes construidos para {paquete}, no use --skip-build")
-                        sys.exit(1)
-                    sb.run([datos["root"], "pacman", "-U"] + paquetes, check=True)
-                except sb.CalledProcessError as e:
-                    red(f"ERROR: Fallo al instalar el paquete ya construido: {e}")
-            else:
-                pkgbuild(paquete, reinstall, verbose, False, show_install_script)
+            pkgbuild(paquete, reinstall, verbose, False, show_install_script)
         except sb.CalledProcessError:
             if confirm("""ADVERTRNCIA: El repositorio ya estaba clonado, si su intención es
 actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una reinstalación?"):
