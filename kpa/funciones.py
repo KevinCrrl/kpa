@@ -29,7 +29,7 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.1.0")
+    print("KPA Versión 3.1.1")
 
 
 def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
@@ -62,14 +62,16 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
 
     # MOSTRAR SCRIPT DE INSTALACION O NO
     if (not actualizacion) or show_install_script:
-        install_script: str = pkg.get_install()
         try:
-            yellow("\nADVERTENCIA: Se ha detectado un script install en el PKGBUILD, se imprimirá para que lo lea:\n")
-            visor(join(p_ruta, install_script))
+            install_script: str = pkg.get_install()
         except ParserKeyError:
             pass  # No hay install en el PKGBUILD, se pasa por alto
-        except FileNotFoundError:
-            yellow(f"ADVERTENCIA: El script install parece usar un nombre complejo que no se pudo resolver: {install_script}")
+        else:
+            try:
+                yellow("\nADVERTENCIA: Se ha detectado un script install en el PKGBUILD, se imprimirá para que lo lea:\n")
+                visor(join(p_ruta, install_script))
+            except FileNotFoundError:
+                yellow(f"ADVERTENCIA: El script install parece usar un nombre complejo que no se pudo resolver: {install_script}")
 
     # VERIFICAR ATAQUES IDN
     try:
