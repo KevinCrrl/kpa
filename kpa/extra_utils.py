@@ -9,10 +9,12 @@ from subprocess import run, CalledProcessError
 import sys
 
 from rich.syntax import Syntax
+from rich.table import Table
 from pkgbuild_parser import Parser
 
 from kpa.parser import datos
 from kpa.colorprints import yellow, yellow_input, red, console
+from kpa.aurapi import extra_vals
 
 
 def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = "") -> bool:
@@ -157,3 +159,14 @@ def anti_idn_attack(sources: list[str]):
                        "¿Continuar a pesar de la advertencia o pasar falsa alarma?")
 
     return True
+
+
+def warnings_table(package: str):
+    warnings: list[str] = extra_vals(package)
+    if len(warnings) > 0:
+        table = Table("ADVERTENCIAS", title="Advertencias adicionales para este paquete:")
+
+        for warning in warnings:
+            table.add_row(warning, style="yellow")
+
+        console.print(table)

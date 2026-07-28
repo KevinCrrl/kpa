@@ -16,7 +16,8 @@ from rich.syntax import Syntax
 import jsonschema
 
 from kpa.extra_utils import (clean_cache, confirm, eula_detectado,
-                             visor, no_aur, get_size_mb, anti_idn_attack)
+                             visor, no_aur, get_size_mb, anti_idn_attack,
+                             warnings_table)
 from kpa.parser import datos, kpa_schema
 from kpa.aurapi import verificar_paquetes
 from kpa.colorprints import blue, yellow, red, green, console
@@ -29,17 +30,18 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.1.1")
+    print("KPA Versión 3.2.0")
 
 
 def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
-             ignore_pkgbuild: bool = False, show_install_script: bool = False):
+             ignore_pkgbuild: bool = False, show_install_script: bool = False,
+             show_warnings: bool = True):
     p_ruta = join(RUTA, paquete)
     pkg = Parser()
     print("\n")
 
     # DETECCION DE EULA
-    if datos["eula_detector"] and eula_detectado(join(RUTA, paquete), pkg) and not actualizacion:
+    if datos["eula_detector"] and (not actualizacion) and eula_detectado(join(RUTA, paquete), pkg):
         value = confirm(
             "ADVERTENCIA: Posible EULA, se recomienda que lo lea antes de instalar.",
             "¿Desea continuar con la instalación de un paquete con EULA?",
@@ -84,14 +86,19 @@ def pkgbuild(paquete: str, actualizacion: bool = False, verbose: bool = False,
             rmtree(p_ruta)
         sys.exit(1)
 
+    # VALIDACIONES/ADVERTENCIAS EXTRA DE HUERFANOS Y DESACTUALIZADOS
+    print()
+    if show_warnings:
+        warnings_table(paquete)
+
     # PREGUNTAR POR LA LECTURA DEL PKGBUILD
     if not actualizacion:
         value = confirm(
-            "", "\nLea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
+            "", "Lea el PKGBUILD del repositorio clonado, ¿Desea continuar con la construcción?",
             True, archivo_pkgbuild)
     else:
         value = confirm(
-            "", "\nLea el PKGBUILD y/o diff del pull realizado, ¿Desea continuar con la construcción?",
+            "", "Lea el PKGBUILD y/o diff del pull realizado, ¿Desea continuar con la construcción?",
             True, archivo_pkgbuild)
 
     # VERIFICAR DEPENDENCIAS SI SE ACEPTA LA INSTALACION
@@ -173,7 +180,8 @@ actualizar use el argumento -A""", "O por el contrario...\n¿Desea realizar una 
 class Updater:
     def __init__(self, paquetes: list[str], verbose: bool,
                  force: bool, ignorados: bool, solo_ignorados: bool,
-                 ignore_diff: bool, ignore_pkgbuild: bool):
+                 ignore_diff: bool, ignore_pkgbuild: bool,
+                 ignore_warnings: bool):
         self.paquetes = paquetes
         self.verbose = verbose
         self.force = force
@@ -181,6 +189,7 @@ class Updater:
         self.solo_ignorados = solo_ignorados
         self.ignore_diff = ignore_diff
         self.ignore_pkgbuild = ignore_pkgbuild
+        self.ignore_warnings = ignore_warnings
 
     def actualizar_simple(self, paquete: str):
         ruta_paquete: str = join(RUTA, paquete)
@@ -212,14 +221,16 @@ class Updater:
                             blue("\n\nMostrando PKGBUILD...\n")
                 clean_cache(ruta_paquete)
                 # Se cambia el estado de actualización a True para que no elimine la carpeta
-                pkgbuild(paquete, True, self.verbose, self.ignore_pkgbuild)
+                pkgbuild(paquete, True, self.verbose, self.ignore_pkgbuild,
+                         show_warnings=not self.ignore_warnings)
         except sb.CalledProcessError as e:
             red(
                 f"ERROR: Se produjo un error mientras se realizaba la actualización: {e}")
             if self.force:
                 yellow("Reintentando en modo force...")
                 rmtree(join(RUTA, paquete))
-                pkgbuild(paquete, True, self.verbose)
+                pkgbuild(paquete, True, self.verbose, self.ignore_pkgbuild,
+                         show_warnings=not self.ignore_warnings)
 
     def actualizar_uno(self, paquete: str):
         if exists(join(RUTA, paquete)):
@@ -260,6 +271,9 @@ def actualizar_arg(paquetes: list[str],
                        help="No mostrar el diff de cambios, solo el PKGBUILD.")] = False,
                    ignore_pkgbuild: Annotated[bool, Option(
                        help="No muestra el PKGBUILD, solo el diff")] = False,
+                   ignore_warnings: Annotated[bool, Option(
+                       help="No muestra las advertencia adicionales de huérfanos y \
+desactualizados")] = False,
                    solo_ignorados: Annotated[bool, Option(help="Actualizar SOLO los ignorados \
 (No aplica a paquetes individuales).")] = False):
     if ignore_pkgbuild and ignore_diff:
@@ -267,27 +281,30 @@ def actualizar_arg(paquetes: list[str],
 Esto supone un riesgo de seguridad, solo puede ignorar una de las 2 cosas.""")
         sys.exit(1)
     Updater(paquetes, verbose, force, ignorados,
-            solo_ignorados, ignore_diff, ignore_pkgbuild).iniciar_actualizar()
+            solo_ignorados, ignore_diff, ignore_pkgbuild,
+            ignore_warnings).iniciar_actualizar()
 
 
 @cli.command(name="Des", help="Desinstalar paquetes.")
 def desinstalar(paquetes: list[str]):
     for paquete in paquetes:
-        value = confirm(
-            f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa",
-            "¿Desea continuar?"
-        )
-        if value:
-            try:
-                rmtree(join(RUTA, paquete))
-                sb.run([datos["root"], "pacman", "-R",
-                       paquete, "--noconfirm"], check=True)
-            except FileNotFoundError:
-                red("ERROR: Este paquete no se encuentra en la carpeta kpa, \
-por ende no se intentará desinstalar.")
-            except sb.CalledProcessError:
-                red("ERROR: Es posible que el paquete ya no estuviera \
+        p_path = join(RUTA, paquete)
+        if exists(p_path):
+            value = confirm(
+                f"ADVERTENCIA: Se quitará del sistema {paquete} y se eliminará su carpeta en kpa",
+                "¿Desea continuar?"
+            )
+            if value:
+                try:
+                    rmtree(p_path)
+                    sb.run([datos["root"], "pacman", "-R",
+                           paquete, "--noconfirm"], check=True)
+                except sb.CalledProcessError:
+                    red("ERROR: Es posible que el paquete ya no estuviera \
 instalado, pues falló el intentar eliminarlo con Pacman.")
+        else:
+            red("ERROR: Este paquete no se encuentra en la carpeta kpa, \
+por ende no se intentará desinstalar.")
 
 
 @cli.command(name="Limp", help="Limpiar paquetes huérfanos \
@@ -330,7 +347,9 @@ def limpiar(opciones: list[str]):
 
 
 @cli.command(name="Conf", help="Cambiar la configuración en el archivo kpa.json")
-def conf(to_set: str):
+def conf(to_set: str,
+         list_conf:
+         Annotated[bool, Option(help="Añadir a la lista en vez de sobreescribir")] = False):
     to_set_list: list = to_set.split("=")
     bools = {
         "True": True,
@@ -353,8 +372,13 @@ def conf(to_set: str):
                 yellow(
                     "El valor de 'ignorar' no puede incluir corchetes, debe ser 'ignorar=\"paquete paquete2\"'")
                 sys.exit(1)
-            to_set_list[1] = to_set_list[1].split()
-        datos[to_set_list[0]] = to_set_list[1]
+            if not list_conf:
+                to_set_list[1] = to_set_list[1].split()
+
+        if list_conf:
+            datos[to_set_list[0]].append(to_set_list[1])
+        else:
+            datos[to_set_list[0]] = to_set_list[1]
 
         # Validar antes de aplicar
         jsonschema.validate(datos, kpa_schema)
@@ -368,3 +392,5 @@ def conf(to_set: str):
         red(f"ERROR: Falló la validación de la configuración: {e}")
     except UnicodeEncodeError as e:
         red(f"ERROR: Problema relacionado con la codificación del valor ingresado: {e}")
+    except AttributeError:
+        red("ERROR: --list-conf no se puede usar con valores de tipo string.")

@@ -8,6 +8,11 @@
 
 [Documentación para la versión Stable](https://kevincrrl.github.io/KevinCrrl/documentacion/kpa.html)
 
+## Documentos adicionales
+
+- [Código de conducta](docs/CODE_OF_CONDUCT.md)
+- [Créditos](docs/CREDITS.md)
+
 ## Pasos para usar en desarrollo
 
 Para escribir código para KPA, primero se debe entender que a partir de la versión 2.0.0 se comporta como un paquete y no como un script simple, por ello se recomienda crear un entorno virtual para usar pip e instalar dependencias sin romper dependencias externas del sistema.
