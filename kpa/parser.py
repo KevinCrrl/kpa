@@ -1,12 +1,12 @@
-# Copyright (C) 2025-2026 KevinCrrl
-# Licencia GPL 3 o superior (ver archivo LICENSE)
+# Copyright 2025-2026 - KevinCrrl
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-from os.path import join
 import json
 import sys
+from os.path import join
 
-from xdg.BaseDirectory import xdg_config_home
 import jsonschema
+from xdg.BaseDirectory import xdg_config_home
 
 from kpa.colorprints import red, yellow
 
@@ -19,7 +19,7 @@ datos_kpa = {
     "eula_detector": True,  # Activado por defecto para mejor seguridad legal
     "url": "https://aur.archlinux.org",  # URL típica del AUR
     # Clonar directamente el repositorio, sin usar ramas como en algunos mirrors del AUR.
-    "clone_branch": False
+    "clone_branch": False,
 }
 
 # Crear copia
@@ -44,16 +44,17 @@ kpa_schema = {
         "ignorar": {"type": "array", "items": {"type": "string"}},
         "eula_detector": {"type": "boolean"},
         "url": {"type": "string"},
-        "clone_branch": {"type": "boolean"}
+        "clone_branch": {"type": "boolean"},
     },
-    "required": []
+    "required": [],
 }
 
 try:
     jsonschema.validate(datos_usuario, kpa_schema)
 except jsonschema.ValidationError as e:
     red(
-        f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}")
+        f"ERROR: La validación de configuración de KPA encontró un error en tu archivo kpa.json: {e}"
+    )
     sys.exit(1)
 
 datos = {}  # Config definitiva que se irá completando

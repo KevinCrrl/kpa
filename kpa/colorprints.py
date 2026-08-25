@@ -1,5 +1,5 @@
-# Copyright (C) 2025-2026 KevinCrrl
-# Licencia GPL 3 o superior (ver archivo LICENSE)
+# Copyright 2025-2026 - KevinCrrl
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from rich.console import Console
 

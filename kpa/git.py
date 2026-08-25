@@ -1,9 +1,10 @@
-# Copyright (C) 2025-2026 KevinCrrl
-# Licencia GPL 3 o superior (ver archivo LICENSE)
+# Copyright 2025-2026 - KevinCrrl
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import subprocess as sb
-from kpa.parser import datos
+
 from kpa.colorprints import yellow
+from kpa.parser import datos
 
 
 def git_run(comando: list[str], verbose: bool):
@@ -24,8 +25,13 @@ def pull(verbose: bool = False, ignore_diff: bool = False) -> str:
     git_run(["git", "fetch", "origin"], verbose)
     if not ignore_diff:
         try:
-            output = sb.run(["git", "diff", "HEAD", "origin"], check=True,
-                            shell=False, capture_output=True, text=True).stdout
+            output = sb.run(
+                ["git", "diff", "HEAD", "origin"],
+                check=True,
+                shell=False,
+                capture_output=True,
+                text=True,
+            ).stdout
         except sb.CalledProcessError as e:
             yellow(f"No se pudo mostrar el diff de la actualización: {e}")
     git_run(["git", "reset", "--hard", "origin"], verbose)

@@ -1,7 +1,8 @@
-# Copyright (C) 2025-2026 KevinCrrl
-# Licencia GPL 3 o superior (ver archivo LICENSE)
+# Copyright 2025-2026 - KevinCrrl
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import subprocess as sb
+
 import requests
 
 BASE_URL = "https://aur.archlinux.org/rpc/v5/info?arg[]="
@@ -18,8 +19,12 @@ def existe(paquete: str) -> bool:
 
 
 def oficial_en_repos(paquete: str) -> bool:
-    return sb.run(["pacman", "-Si", paquete], check=False, shell=False,
-                  capture_output=True).returncode == 0
+    return (
+        sb.run(
+            ["pacman", "-Si", paquete], check=False, shell=False, capture_output=True
+        ).returncode
+        == 0
+    )
 
 
 def verificar_paquetes(paquetes: list[str]) -> list[str]:

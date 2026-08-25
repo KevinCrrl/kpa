@@ -1,23 +1,25 @@
-# Copyright (C) 2025-2026 KevinCrrl
-# Licencia GPL 3 o superior (ver archivo LICENSE)
+# Copyright 2025-2026 - KevinCrrl
+# SPDX-License-Identifier: GPL-3.0-or-later
 
+import sys
+from os import getenv, listdir, remove
+from os.path import getsize, isdir, islink, join
 from pathlib import Path
 from shutil import rmtree
-from os.path import join, getsize, islink, isdir
-from os import listdir, remove, getenv
-from subprocess import run, CalledProcessError
-import sys
+from subprocess import CalledProcessError, run
 
+from pkgbuild_parser import Parser
 from rich.syntax import Syntax
 from rich.table import Table
-from pkgbuild_parser import Parser
 
-from kpa.parser import datos
-from kpa.colorprints import yellow, yellow_input, red, console
 from kpa.aurapi import extra_vals
+from kpa.colorprints import console, red, yellow, yellow_input
+from kpa.parser import datos
 
 
-def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = "") -> bool:
+def confirm(
+    text: str, question: str, e_mode: bool = False, file_emode: str = ""
+) -> bool:
     correct_input: bool = False
     yellow(text)
     answer_fix: str = ""
@@ -27,7 +29,7 @@ def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = ""
         else:
             answer = yellow_input(f"{question} (S/N):")
         answer_fix = answer.strip().lower()
-        if answer_fix in ('s', 'n'):
+        if answer_fix in ("s", "n"):
             correct_input = True
         elif answer_fix == "e" and e_mode:
             editor: str | None = getenv("EDITOR")
@@ -42,9 +44,7 @@ def confirm(text: str, question: str, e_mode: bool = False, file_emode: str = ""
         else:
             yellow("Opción incorrecta, intente de nuevo...")
 
-    if answer_fix == "s":
-        return True
-    return False
+    return answer_fix == "s"
 
 
 def encontrar_archivos(ruta: str, extension: str) -> list:
@@ -52,8 +52,11 @@ def encontrar_archivos(ruta: str, extension: str) -> list:
 
 
 def visor(ruta_archivo: str):
-    console.print(Syntax.from_path(
-        ruta_archivo, lexer="bash", line_numbers=True, theme=datos["visor_theme"]))
+    console.print(
+        Syntax.from_path(
+            ruta_archivo, lexer="bash", line_numbers=True, theme=datos["visor_theme"]
+        )
+    )
 
 
 def no_aur(ruta: str):
@@ -63,8 +66,12 @@ def no_aur(ruta: str):
 
 
 def eula_detectado(ruta: str, parser: Parser) -> bool:
-    nombres_comunes: list[str] = ["eula.txt", "license.eula",
-                                  "license.html", "eula_text.html",]
+    nombres_comunes: list[str] = [
+        "eula.txt",
+        "license.eula",
+        "license.html",
+        "eula_text.html",
+    ]
     licenses_comunes: list[str] = ["proprietary", "custom", "eula"]
     for archivo in listdir(ruta):
         if archivo.lower() in nombres_comunes:
@@ -86,7 +93,15 @@ def clean_cache(path: str):
     except (PermissionError, FileNotFoundError):
         pass
     to_remove: list[str] = []
-    extensiones: list[str] = [".tar.zst", ".tar.gz", "tar.xz", ".deb", ".zip", ".part", ".sig"]
+    extensiones: list[str] = [
+        ".tar.zst",
+        ".tar.gz",
+        "tar.xz",
+        ".deb",
+        ".zip",
+        ".part",
+        ".sig",
+    ]
     for extension in extensiones:
         to_remove += encontrar_archivos(path, extension)
     for file_to_remove in to_remove:
@@ -120,7 +135,7 @@ def get_size_mb(path: str) -> float:
             except OSError:
                 pass
 
-    return total / 1024 ** 2  # MB
+    return total / 1024**2  # MB
 
 
 def anti_idn_attack(sources: list[str]):
@@ -153,10 +168,14 @@ def anti_idn_attack(sources: list[str]):
         positions = []
 
     if urls != 0:
-        red(f"Se encontraron {urls} sources sospechosos, aunque pueden ser falsas alarmas. Lea más aquí:")
+        red(
+            f"Se encontraron {urls} sources sospechosos, aunque pueden ser falsas alarmas. Lea más aquí:"
+        )
         print("https://en.wikipedia.org/wiki/IDN_homograph_attack\n")
-        return confirm("Los sources sospechosos pueden ser URLs que suplantan a una original.",
-                       "¿Continuar a pesar de la advertencia o pasar falsa alarma?")
+        return confirm(
+            "Los sources sospechosos pueden ser URLs que suplantan a una original.",
+            "¿Continuar a pesar de la advertencia o pasar falsa alarma?",
+        )
 
     return True
 
@@ -164,7 +183,9 @@ def anti_idn_attack(sources: list[str]):
 def warnings_table(package: str):
     warnings: list[str] = extra_vals(package)
     if len(warnings) > 0:
-        table = Table("ADVERTENCIAS", title="Advertencias adicionales para este paquete:")
+        table = Table(
+            "ADVERTENCIAS", title="Advertencias adicionales para este paquete:"
+        )
 
         for warning in warnings:
             table.add_row(warning, style="yellow")
