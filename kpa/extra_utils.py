@@ -20,10 +20,11 @@ from kpa.parser import datos
 def confirm(
     text: str, question: str, e_mode: bool = False, file_emode: str = ""
 ) -> bool:
+    errors: int = 0
     correct_input: bool = False
     yellow(text)
     answer_fix: str = ""
-    while not correct_input:
+    while (not correct_input) and errors != 3:
         if e_mode:
             answer = yellow_input(f"{question} (S/N/[E]ditar):")
         else:
@@ -41,9 +42,13 @@ def confirm(
                 run(editor.split() + [file_emode], check=True, shell=False)
             except CalledProcessError as e:
                 yellow(f"Error al abrir el editor: {e}")
+                errors += 1
         else:
             yellow("Opción incorrecta, intente de nuevo...")
+            errors += 1
 
+    if errors == 3:
+        red("Se produjeron 3 errores en la respuesta! Abortando...")
     return answer_fix == "s"
 
 
