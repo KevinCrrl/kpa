@@ -7,15 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: alpine:latest
-    name: flake8 Lint
+    name: Ruff Check
     steps:
       - name: Check out source repository
         uses: actions/checkout@v6
-      - name: flake8 Lint
+      - name: Ruff Check
         run: |
           apk update && apk upgrade --no-cache
-          apk add py3-flake8 --no-cache
-          flake8 kpa
+          apk add ruff --no-cache
+          ruff check kpa
 
   shellcheck-lint:
     runs-on: ubuntu-latest
