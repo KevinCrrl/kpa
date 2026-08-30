@@ -37,7 +37,7 @@ cli = Typer(suggest_commands=True)
 
 @cli.command(name="version", help="Mostrar la versión instalada de KPA.")
 def version():
-    print("KPA Versión 3.2.1")
+    print("KPA Versión 3.2.2")
 
 
 def pkgbuild(

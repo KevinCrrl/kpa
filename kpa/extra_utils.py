@@ -144,13 +144,10 @@ def anti_idn_attack(sources: list[str]):
     for source in sources:
         alert = False
         positions: list[int] = []
-        count: int = 0
-        for char in source.lower():
+        for index, char in enumerate(source.lower()):
             if char not in abc:
                 alert = True
-                positions.append(count)
-
-            count += 1
+                positions.append(index)
 
         if alert:
             urls += 1
@@ -164,7 +161,6 @@ def anti_idn_attack(sources: list[str]):
 
             print()
 
-        count = 0
         positions = []
 
     if urls != 0:

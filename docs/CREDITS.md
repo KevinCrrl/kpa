@@ -10,7 +10,7 @@ Esta lista contiene los nombres, enlaces, desarrolladores y licencias de las lib
 
 - [JsonSchema](https://github.com/python-jsonschema/jsonschema): Por [python-jsonschema](https://github.com/python-jsonschema); Bajo la licencia MIT
 
-- [Requests](https://github.com/psf/requests): Por [Python Software Foundation](https://github.com/psf); Bajo la licencia Apache 2.0
+- [Urllib3](https://github.com/urllib3/urllib3): Por [urllib3](https://github.com/urllib3); Bajo la licencia MIT
 
 
 ## Librerías propias

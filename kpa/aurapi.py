@@ -3,19 +3,20 @@
 
 import subprocess as sb
 
-import requests
+import urllib3
 
 BASE_URL = "https://aur.archlinux.org/rpc/v5/info?arg[]="
+pool = urllib3.PoolManager()
 
 
 def existe(paquete: str) -> bool:
     url: str = f"{BASE_URL}{paquete}"
     try:
-        respuesta = requests.get(url, timeout=10).json()
-    except requests.exceptions.Timeout:
+        request = pool.request("GET", url, timeout=10).json()
+    except urllib3.exceptions.MaxRetryError:
         print(f"Timeout verificando si el paquete {paquete} existe en AUR...")
         return False
-    return respuesta["resultcount"] > 0
+    return request["resultcount"] > 0
 
 
 def oficial_en_repos(paquete: str) -> bool:
@@ -42,8 +43,8 @@ def extra_vals(package: str) -> list[str]:
     warnings: list[str] = []
 
     try:
-        request = requests.get(url, timeout=10).json()
-    except requests.exceptions.Timeout:
+        request = pool.request("GET", url, timeout=10).json()
+    except urllib3.exceptions.MaxRetryError:
         pass
     else:
         results = request["results"][0]
