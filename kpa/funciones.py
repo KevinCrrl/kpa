@@ -390,11 +390,11 @@ def desinstalar(paquetes: list[str]):
             )
             if value:
                 try:
-                    rmtree(p_path)
                     sb.run(
                         [datos["root"], "pacman", "-R", paquete, "--noconfirm"],
                         check=True,
                     )
+                    rmtree(p_path)
                 except sb.CalledProcessError:
                     red(
                         "ERROR: Es posible que el paquete ya no estuviera \

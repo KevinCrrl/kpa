@@ -57,7 +57,7 @@ except jsonschema.ValidationError as e:
     )
     sys.exit(1)
 
-datos = {}  # Config definitiva que se irá completando
+datos: dict = {}  # Config definitiva que se irá completando
 
 for configuracion, valor in datos_kpa.items():
     try:
