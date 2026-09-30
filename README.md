@@ -17,21 +17,15 @@
 
 Para escribir código para KPA, primero se debe entender que a partir de la versión 2.0.0 se comporta como un paquete y no como un script simple, por ello se recomienda crear un entorno virtual para usar pip e instalar dependencias sin romper dependencias externas del sistema.
 
-Una vez dentro del entorno, instale lo necesario con el requirements.txt, por ejemplo, usando pip:
+Una vez dentro del entorno, puede instalar KPA en su entorno en modo editable (que es lo recomendado si se van a realizar cambios en el código y se desea evitar desinstalar y reinstalar el paquete cada vez que se va a probar:
 
-```
-(entorno) $ pip install -r requirements.txt
-```
-
-con eso puede instalar KPA en su entorno en modo editable (que es lo recomendado si se van a realizar cambios en el código y se desea evitar desinstalar y reinstalar el paquete cada vez que se va a probar:
-
-```
+```bash
 (entorno) $ pip install -e .
 ```
 
 Una vez instalado se puede probar si funciona con:
 
-```
+```bash
 (entorno) $ kpa --help
 ```
 
