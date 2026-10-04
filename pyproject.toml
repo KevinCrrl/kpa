@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kpa"
-version = "3.2.2"
+version = "3.2.3"
 authors = [
   { name="KevinCrrl" },
 ]
@@ -19,8 +19,8 @@ dependencies = [
     "jsonschema>=4.22.0",
     "pkgbuild-parser>=2.1.0",
     "urllib3>=2.3.0",
-    "typer",
-    "rich",
+    "typer>=0.20.0",
+    "rich>=13.9.2",
 ]
 
 [project.urls]

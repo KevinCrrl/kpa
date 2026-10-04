@@ -144,19 +144,18 @@ def get_size_mb(path: str) -> float:
 
 
 def anti_idn_attack(sources: list[str]):
-    abc: str = "abcdefghijklmnopqrstuvwxyz1234567890:/$¿?={}.,-_!¡[]#*+~&%';<>| "
     urls = 0
     for source in sources:
         alert = False
         positions: list[int] = []
-        for index, char in enumerate(source.lower()):
-            if char not in abc:
+        for index, char in enumerate(source):
+            if not char.isascii():
                 alert = True
                 positions.append(index)
 
         if alert:
             urls += 1
-            red("ALERTA DE ATAQUE DE HOMÓGRAFOS DE IDN; URL sospechosa:")
+            red("ALERTA DE ATAQUE DE SUPLANTACIÓN DE HOMÓGRAFOS DE IDN; URL sospechosa:")
             print(source)
             for i in range(len(source)):
                 if i in positions:
@@ -165,8 +164,6 @@ def anti_idn_attack(sources: list[str]):
                     print(" ", end="")
 
             print()
-
-        positions = []
 
     if urls != 0:
         red(
